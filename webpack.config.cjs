@@ -1,4 +1,7 @@
+require('dotenv').config()
+
 const path = require('path')
+const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
@@ -10,7 +13,7 @@ module.exports = (env, argv) => {
   const isDev = argv.mode === 'development'
 
   return {
-    entry: './src/main.tsx',
+    entry: './src/Main.tsx',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isDev ? '[name].js' : '[name].[contenthash].js',
@@ -27,6 +30,12 @@ module.exports = (env, argv) => {
       hot: true,
       port: 3000,
       open: true,
+      proxy: [
+        {
+          context: ['/api'],
+          target: 'http://localhost:3001',
+        },
+      ],
     },
     module: {
       rules: [
@@ -50,6 +59,9 @@ module.exports = (env, argv) => {
       ],
     },
     plugins: [
+      new webpack.DefinePlugin({
+        GOOGLE_CLIENT_ID: JSON.stringify(process.env.GOOGLE_CLIENT_ID ?? ''),
+      }),
       new HtmlWebpackPlugin({
         template: './index.html',
       }),
