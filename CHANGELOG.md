@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/jaycenusa/auto-shop-inventory-management-system/compare/v1.0.1...v1.1.0) (2026-05-29)
+
+### Features
+
+* add backend codes ([b168b7b](https://github.com/jaycenusa/auto-shop-inventory-management-system/commit/b168b7b53dac74d02e1d3f217d9c23ef6a695632))
+
 ## [1.0.1](https://github.com/jaycenusa/auto-shop-inventory-management-system/compare/v1.0.0...v1.0.1) (2026-05-29)
 
 ### Bug Fixes
