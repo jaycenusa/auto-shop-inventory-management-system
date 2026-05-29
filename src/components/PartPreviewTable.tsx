@@ -31,27 +31,25 @@ export default function PartPreviewTable({
       <InventoryTable extraHeaderCell={Boolean(onRemove)}>
         {parts.map((part) => (
           <tr key={part.id}>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <PartImage
                 src={getPartImageUrl(part)}
                 alt={part.carPart}
               />
             </td>
-            <td className="px-4 py-3 font-medium text-slate-900">
+            <td className="table-cell--emphasis">
               {part.carPart}
-              <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-                {badge}
-              </span>
+              <span className="preview-badge">{badge}</span>
             </td>
             <td className={tdClass}>{part.brand}</td>
             <td className={tdClass}>{part.category}</td>
             <td className={tdClass}>${part.price.toFixed(2)}</td>
             <td className={tdClass}>{part.quantity}</td>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <StatusBadge status={part.availabilityStatus} />
             </td>
             {onRemove && (
-              <td className="px-4 py-3">
+              <td className="table-cell">
                 <Button
                   variant="danger"
                   onClick={() => onRemove(part.id)}

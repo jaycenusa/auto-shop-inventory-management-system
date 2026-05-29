@@ -14,6 +14,12 @@ export const PART_TABLE_HEADERS = [
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=200&h=200&fit=crop'
 
+const STATUS_BADGE_CLASS: Record<AvailabilityStatus, string> = {
+  'In Stock': 'status-badge status-badge--in-stock',
+  'Low Stock': 'status-badge status-badge--low-stock',
+  'Out of Stock': 'status-badge status-badge--out-of-stock',
+}
+
 export function PartImage({
   src,
   alt,
@@ -23,13 +29,13 @@ export function PartImage({
   alt: string
   size?: 'sm' | 'md'
 }) {
-  const sizeClass = size === 'sm' ? 'h-10 w-10' : 'h-14 w-14'
+  const sizeClass = size === 'sm' ? 'part-image--sm' : 'part-image--md'
 
   return (
     <img
       src={src}
       alt={alt}
-      className={`${sizeClass} rounded-lg border border-slate-200 bg-slate-100 object-cover`}
+      className={`part-image ${sizeClass}`}
       onError={(e) => {
         e.currentTarget.onerror = null
         e.currentTarget.src = FALLBACK_IMAGE
@@ -54,31 +60,16 @@ export function CompareImageCell({
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="compare-images">
       <PartImage src={beforeSrc} alt={`${alt} before`} size="sm" />
-      <span className="text-amber-600">→</span>
+      <span className="compare-images__arrow">→</span>
       <PartImage src={afterSrc} alt={`${alt} after`} size="sm" />
     </div>
   )
 }
 
-const statusStyles: Record<AvailabilityStatus, string> = {
-  'In Stock': 'bg-emerald-100 text-emerald-800',
-  'Low Stock': 'bg-amber-100 text-amber-800',
-  'Out of Stock': 'bg-red-100 text-red-800',
-}
-
-const thClass = 'px-4 py-3 font-semibold text-slate-900'
-const tdClass = 'px-4 py-3 text-slate-700'
-
 export function StatusBadge({ status }: { status: AvailabilityStatus }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[status]}`}
-    >
-      {status}
-    </span>
-  )
+  return <span className={STATUS_BADGE_CLASS[status]}>{status}</span>
 }
 
 export function CompareCell({
@@ -94,14 +85,14 @@ export function CompareCell({
   const changed = before !== after
 
   if (!changed) {
-    return <span className="text-slate-700">{fmt(after)}</span>
+    return <span className="compare-cell">{fmt(after)}</span>
   }
 
   return (
-    <span className="text-slate-700">
-      <span className="text-slate-400 line-through">{fmt(before)}</span>
-      <span className="mx-1 text-amber-600">→</span>
-      <span className="font-medium text-amber-700">{fmt(after)}</span>
+    <span className="compare-cell">
+      <span className="compare-cell__before">{fmt(before)}</span>
+      <span className="compare-cell__arrow">→</span>
+      <span className="compare-cell__after">{fmt(after)}</span>
     </span>
   )
 }
@@ -109,32 +100,40 @@ export function CompareCell({
 type InventoryTableProps = {
   children: ReactNode
   extraHeaderCell?: boolean
-  minWidth?: string
-  borderClassName?: string
+  minWidth?: 'default' | 'compare'
+  borderVariant?: 'default' | 'amber'
 }
 
 export function InventoryTable({
   children,
   extraHeaderCell = false,
-  minWidth = 'min-w-[760px]',
-  borderClassName = 'border-slate-200',
+  minWidth = 'default',
+  borderVariant = 'default',
 }: InventoryTableProps) {
+  const wrapClass =
+    borderVariant === 'amber'
+      ? 'inventory-table-wrap inventory-table-wrap--amber'
+      : 'inventory-table-wrap'
+
+  const tableClass =
+    minWidth === 'compare'
+      ? 'inventory-table inventory-table--compare'
+      : 'inventory-table inventory-table--wide'
+
   return (
-    <div
-      className={`overflow-x-auto rounded-lg border bg-white ${borderClassName}`}
-    >
-      <table className={`w-full ${minWidth} text-left text-sm`}>
+    <div className={wrapClass}>
+      <table className={tableClass}>
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className="inventory-table__head-row">
             {PART_TABLE_HEADERS.map((header) => (
-              <th key={header} className={thClass}>
+              <th key={header} className="table-cell--header">
                 {header}
               </th>
             ))}
-            {extraHeaderCell && <th className={thClass} />}
+            {extraHeaderCell && <th className="table-cell--header" />}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">{children}</tbody>
+        <tbody className="inventory-table__body">{children}</tbody>
       </table>
     </div>
   )
@@ -155,26 +154,29 @@ export function TableSection({
 }: TableSectionProps) {
   const sectionClass =
     variant === 'amber'
-      ? 'mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4'
-      : 'mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4'
+      ? 'table-section table-section--amber'
+      : 'table-section table-section--default'
 
   const titleClass =
     variant === 'amber'
-      ? 'text-base font-semibold text-amber-900'
-      : 'text-base font-semibold text-slate-900'
+      ? 'table-section__title table-section__title--amber'
+      : 'table-section__title table-section__title--default'
 
   const descriptionClass =
     variant === 'amber'
-      ? 'mt-1 text-sm text-amber-800'
-      : 'mt-1 text-sm text-slate-600'
+      ? 'table-section__description table-section__description--amber'
+      : 'table-section__description table-section__description--default'
 
   return (
     <section className={sectionClass}>
       <h3 className={titleClass}>{title}</h3>
       {description && <p className={descriptionClass}>{description}</p>}
-      <div className="mt-4">{children}</div>
+      <div className="table-section__content">{children}</div>
     </section>
   )
 }
 
-export { tdClass }
+/** @deprecated Use table-cell */
+export const tdClass = 'table-cell'
+
+export { STATUS_BADGE_CLASS }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { OrderCartProvider } from './Context/OrderCartContext'
 import { AuthProvider } from './OAuth/AuthContext'
 import Homepage from './Pages/Homepage'
 import InventoryPage from './Pages/InventoryPage'
@@ -22,12 +23,10 @@ function App() {
   const [parts, setParts] = useState<InventoryPart[]>(initialParts)
 
   const handleNavigate = (nextPage: AppPage) => {
+    if (nextPage === 'inventory') {
+      setInventoryCategory(null)
+    }
     setPage(nextPage)
-  }
-
-  const handleSelectInventoryCategory = (category: InventoryCategory) => {
-    setInventoryCategory(category)
-    setPage('inventory')
   }
 
   const handleInventorySearchChange = (carPart: string) => {
@@ -41,7 +40,6 @@ function App() {
     activePage: page,
     onNavigate: handleNavigate,
     inventoryCategory,
-    onSelectInventoryCategory: handleSelectInventoryCategory,
     inventoryFilters,
     onInventorySearchChange: handleInventorySearchChange,
   }
@@ -64,7 +62,11 @@ function App() {
     content = <Homepage {...headerProps} />
   }
 
-  return <AuthProvider>{content}</AuthProvider>
+  return (
+    <AuthProvider>
+      <OrderCartProvider>{content}</OrderCartProvider>
+    </AuthProvider>
+  )
 }
 
 export default App

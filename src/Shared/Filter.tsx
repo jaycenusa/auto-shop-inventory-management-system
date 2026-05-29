@@ -69,9 +69,6 @@ type FilterProps = {
   showClear?: boolean
 }
 
-const inputClass =
-  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500'
-
 export default function Filter({
   filters,
   brandOptions,
@@ -81,33 +78,33 @@ export default function Filter({
 }: FilterProps) {
   return (
     <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">Filter parts</h2>
+      <div className="filter__header">
+        <h2 className="filter__title">Filter parts</h2>
         {showClear && onClear && (
           <Button variant="link" onClick={onClear}>
             Clear filters
           </Button>
         )}
       </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="block text-sm">
-          <span className="font-medium text-slate-700">Car part</span>
+      <div className="filter__grid">
+        <label className="form-field">
+          <span className="form-label">Car part</span>
           <input
             type="text"
             value={filters.carPart}
             onChange={(e) =>
               onChange({ ...filters, carPart: e.target.value })
             }
-            className={inputClass}
+            className="form-input"
             placeholder="Search by name..."
           />
         </label>
-        <label className="block text-sm">
-          <span className="font-medium text-slate-700">Brand</span>
+        <label className="form-field">
+          <span className="form-label">Brand</span>
           <select
             value={filters.brand}
             onChange={(e) => onChange({ ...filters, brand: e.target.value })}
-            className={inputClass}
+            className="form-input"
           >
             <option value="All">All brands</option>
             {brandOptions.map((brand) => (
@@ -117,8 +114,8 @@ export default function Filter({
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="font-medium text-slate-700">Availability status</span>
+        <label className="form-field">
+          <span className="form-label">Availability status</span>
           <select
             value={filters.availabilityStatus}
             onChange={(e) =>
@@ -128,7 +125,7 @@ export default function Filter({
                   .value as InventoryFilterState['availabilityStatus'],
               })
             }
-            className={inputClass}
+            className="form-input"
           >
             <option value="All">All statuses</option>
             {availabilityOptions.map((status) => (

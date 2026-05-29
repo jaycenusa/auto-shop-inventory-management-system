@@ -1,0 +1,11 @@
+.header-auth {
+  @apply flex items-center gap-2;
+}
+
+.header-auth__user {
+  @apply hidden max-w-[12rem] truncate text-sm text-slate-300 sm:inline;
+}
+
+.header-auth__provider {
+  @apply ml-1 text-xs text-slate-500;
+}

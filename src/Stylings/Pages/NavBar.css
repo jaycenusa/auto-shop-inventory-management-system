@@ -1,0 +1,31 @@
+.navbar {
+  @apply border-t border-slate-600 bg-slate-800;
+}
+
+.navbar__inner {
+  @apply flex w-full items-center gap-3 px-4 py-2 sm:px-6 lg:px-8;
+}
+
+.navbar__center {
+  @apply flex min-w-0 flex-1 flex-col items-center justify-center gap-3 sm:flex-row;
+}
+
+.navbar__links {
+  @apply flex flex-wrap items-center justify-center gap-1;
+}
+
+.navbar-search {
+  @apply relative w-full max-w-xs sm:w-64 lg:w-72;
+}
+
+.navbar-search__icon-wrap {
+  @apply pointer-events-none absolute inset-y-0 inset-s-0 flex items-center ps-3;
+}
+
+.navbar-search__icon {
+  @apply h-4 w-4 text-slate-500;
+}
+
+.navbar-search__input {
+  @apply block w-full rounded-lg border border-slate-600 bg-slate-800 py-2 ps-10 pe-3 text-sm text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500;
+}

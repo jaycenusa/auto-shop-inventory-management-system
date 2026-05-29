@@ -1,0 +1,39 @@
+.modify-table-scroll {
+  @apply overflow-x-auto;
+}
+
+.modify-table {
+  @apply w-full min-w-full text-left text-sm;
+}
+
+.modify-table__head-row {
+  @apply border-b border-slate-200 bg-slate-50;
+}
+
+.modify-table__th {
+  @apply px-4 py-3 font-semibold;
+}
+
+.modify-table__body {
+  @apply divide-y divide-slate-100;
+}
+
+.modify-table__empty {
+  @apply px-4 py-12 text-center text-slate-500;
+}
+
+.modify-table__row {
+  @apply hover:bg-slate-50;
+}
+
+.modify-table__cell {
+  @apply px-4 py-2;
+}
+
+.modify-table__cell--top {
+  @apply align-top;
+}
+
+.modify-compare-footer {
+  @apply border-t border-slate-200 px-6 pb-6;
+}
