@@ -21,5 +21,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["webpack.config.cjs", "babel.config.cjs", "postcss.config.mjs"]
+  "include": ["esbuild.mjs", "postcss.config.mjs"]
 }

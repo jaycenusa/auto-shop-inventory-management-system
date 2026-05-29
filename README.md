@@ -53,8 +53,7 @@ A full-width React application for managing auto shop parts inventory—browse s
 
 - **React 19** with **TypeScript**
 - **react-hook-form** — form state and validation
-- **Webpack 5** — bundling, dev server, and production builds
-- **Babel** — JSX/TS transpilation and React Fast Refresh in development
+- **esbuild** — bundling, dev server, and production builds (`esbuild.mjs`)
 - **Tailwind CSS v4** — via `@import "tailwindcss"` in `src/Index.css` and PostCSS (`@tailwindcss/postcss`)
 - **Express** + **nodemailer** — notification API
 - **ESLint** — flat config in `eslint.config.js`
@@ -63,10 +62,10 @@ A full-width React application for managing auto shop parts inventory—browse s
 
 | Command           | Description                                      |
 | ----------------- | ------------------------------------------------ |
-| `npm run dev`     | Start Webpack dev server (default: port 3000)    |
+| `npm run dev`     | Start esbuild dev server (default: port 3000)    |
 | `npm run server`  | Start notification API (port 3001)               |
 | `npm run build`   | Type-check with `tsc -b`, then production build  |
-| `npm run preview` | Serve production build via Webpack dev server    |
+| `npm run preview` | Build and serve `dist/` statically (port 3000)   |
 | `npm run lint`    | Run ESLint                                       |
 | `npm run release` | Analyze commits and publish a version (CI)       |
 
@@ -109,6 +108,7 @@ Production output is written to `dist/`.
 | `src/Services/NotificationService.ts` | Client stock-alert API calls |
 | `server/Index.cjs` | Express API (`/api/notify/email`) |
 | `server/NotificationService.cjs` | nodemailer email sending |
+| `esbuild.mjs` | esbuild + Tailwind CLI build and dev server |
 
 ## Getting started
 
