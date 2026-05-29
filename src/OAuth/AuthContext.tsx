@@ -15,10 +15,6 @@ import {
 } from './AwsAuth'
 import type { AuthUser, LoginCredentials } from './Types'
 
-const AUTH_STORAGE_KEY = 'autoshop_ims_auth'
-
-type StoredAuthUser = Pick<AuthUser, 'username' | 'provider'>
-
 type AuthContextValue = {
   user: AuthUser | null
   login: (credentials: LoginCredentials) => Promise<void>
@@ -30,32 +26,11 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 function readStoredUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<StoredAuthUser>
-    if (!parsed.username || !parsed.provider) return null
-    return {
-      username: parsed.username,
-      provider: parsed.provider,
-    }
-  } catch {
-    return null
-  }
+  return null
 }
 
-function storeUser(user: AuthUser | null) {
-  if (!user) {
-    localStorage.removeItem(AUTH_STORAGE_KEY)
-    return
-  }
-
-  const storedUser: StoredAuthUser = {
-    username: user.username,
-    provider: user.provider,
-  }
-
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(storedUser))
+function storeUser(_user: AuthUser | null) {
+  // Intentionally do not persist auth user data in browser storage.
 }
 
 type AuthProviderProps = {
