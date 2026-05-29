@@ -17,6 +17,8 @@ import type { AuthUser, LoginCredentials } from './Types'
 
 const AUTH_STORAGE_KEY = 'autoshop_ims_auth'
 
+type StoredAuthUser = Pick<AuthUser, 'username' | 'provider'>
+
 type AuthContextValue = {
   user: AuthUser | null
   login: (credentials: LoginCredentials) => Promise<void>
@@ -31,7 +33,12 @@ function readStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as AuthUser
+    const parsed = JSON.parse(raw) as Partial<StoredAuthUser>
+    if (!parsed.username || !parsed.provider) return null
+    return {
+      username: parsed.username,
+      provider: parsed.provider,
+    }
   } catch {
     return null
   }
@@ -42,7 +49,13 @@ function storeUser(user: AuthUser | null) {
     localStorage.removeItem(AUTH_STORAGE_KEY)
     return
   }
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
+
+  const storedUser: StoredAuthUser = {
+    username: user.username,
+    provider: user.provider,
+  }
+
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(storedUser))
 }
 
 type AuthProviderProps = {
