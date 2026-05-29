@@ -67,8 +67,23 @@ A full-width React application for managing auto shop parts inventory—browse s
 | `npm run build`   | Type-check with `tsc -b`, then production build  |
 | `npm run preview` | Build and serve `dist/` statically (port 3000)   |
 | `npm run lint`    | Run ESLint                                       |
+| `npm run release` | Analyze commits and publish a version (CI)       |
 
 For local development with email alerts, run **`npm run dev`** and **`npm run server`** in separate terminals.
+
+## Releases
+
+Pushes to **`main`** (or **`master`**) run [semantic-release](https://semantic-release.gitbook.io/) via GitHub Actions. Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Prefix  | Version bump | Example                      |
+| ------- | ------------ | ---------------------------- |
+| `feat`  | minor        | `feat: add order cart`       |
+| `fix`   | patch        | `fix: inventory search sync` |
+| `chore` | patch        | `chore: update webpack`      |
+
+A releasable push updates `package.json`, `CHANGELOG.md`, creates a Git tag (e.g. `v0.2.0`), and opens a GitHub Release.
+
+**GitHub:** Settings → Actions → General → Workflow permissions → **Read and write** for `GITHUB_TOKEN`.
 
 Production output is written to `dist/`.
 
