@@ -11,6 +11,10 @@ const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin'
 /** @param {{ mode?: string }} argv */
 module.exports = (env, argv) => {
   const isDev = argv.mode === 'development'
+  // webpack-cli sets WEBPACK_SERVE when using `webpack serve`
+  const isServe = process.env.WEBPACK_SERVE === 'true'
+  // MiniCssExtractPlugin breaks HMR and can show errors in the browser overlay when serving
+  const extractCss = !isDev && !isServe
 
   return {
     entry: './src/Main.tsx',
@@ -27,9 +31,16 @@ module.exports = (env, argv) => {
     devtool: isDev ? 'inline-source-map' : 'source-map',
     devServer: {
       historyApiFallback: true,
-      hot: true,
+      hot: isDev,
+      liveReload: isDev,
       port: 3000,
       open: true,
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false,
+        },
+      },
       proxy: [
         {
           context: ['/api'],
@@ -42,12 +53,18 @@ module.exports = (env, argv) => {
         {
           test: /\.[jt]sx?$/,
           exclude: /node_modules/,
-          use: 'babel-loader',
+          use: {
+            loader: 'babel-loader',
+            options: {
+              envName: isDev ? 'development' : 'production',
+              plugins: isDev ? [require.resolve('react-refresh/babel')] : [],
+            },
+          },
         },
         {
           test: /\.css$/i,
           use: [
-            isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+            extractCss ? MiniCssExtractPlugin.loader : 'style-loader',
             'css-loader',
             'postcss-loader',
           ],
@@ -82,7 +99,7 @@ module.exports = (env, argv) => {
       new CopyWebpackPlugin({
         patterns: [{ from: 'public', to: '.' }],
       }),
-      !isDev &&
+      extractCss &&
         new MiniCssExtractPlugin({
           filename: '[name].[contenthash].css',
         }),

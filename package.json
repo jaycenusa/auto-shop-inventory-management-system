@@ -8,7 +8,7 @@
     "server": "node server/Index.cjs",
     "build": "tsc -b && webpack --mode production",
     "lint": "eslint .",
-    "preview": "webpack serve --mode production",
+    "prod": "webpack serve --mode production",
     "release": "semantic-release"
   },
   "dependencies": {
