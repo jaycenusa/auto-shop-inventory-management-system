@@ -61,6 +61,20 @@ module.exports = (env, argv) => {
     plugins: [
       new webpack.DefinePlugin({
         GOOGLE_CLIENT_ID: JSON.stringify(process.env.GOOGLE_CLIENT_ID ?? ''),
+        AWS_REGION: JSON.stringify(process.env.AWS_REGION ?? ''),
+        AWS_USER_POOL_ID: JSON.stringify(process.env.AWS_USER_POOL_ID ?? ''),
+        AWS_USER_POOL_CLIENT_ID: JSON.stringify(
+          process.env.AWS_USER_POOL_CLIENT_ID ?? '',
+        ),
+        AWS_COGNITO_DOMAIN: JSON.stringify(process.env.AWS_COGNITO_DOMAIN ?? ''),
+        AWS_REDIRECT_SIGN_IN: JSON.stringify(
+          process.env.AWS_REDIRECT_SIGN_IN ?? 'http://localhost:3000/',
+        ),
+        AWS_REDIRECT_SIGN_OUT: JSON.stringify(
+          process.env.AWS_REDIRECT_SIGN_OUT ??
+            process.env.AWS_REDIRECT_SIGN_IN ??
+            'http://localhost:3000/',
+        ),
       }),
       new HtmlWebpackPlugin({
         template: './index.html',
