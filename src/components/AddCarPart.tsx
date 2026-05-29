@@ -50,34 +50,23 @@ function getAddPartDefaults(
   }
 }
 
-const inputClass =
-  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500'
-
-const inputErrorClass =
-  'border-red-500 focus:border-red-500 focus:ring-red-500'
-
 function fieldClass(hasError: boolean) {
-  return `${inputClass} ${hasError ? inputErrorClass : ''}`
+  return `form-input${hasError ? ' form-input--error' : ''}`
 }
 
 function RequiredLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="font-medium text-slate-700">
-      {children} <span className="text-red-600">*</span>
-    </span>
-  )
+  return <span className="form-label form-label--required">{children}</span>
 }
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1 text-sm text-red-600">{message}</p>
+  return <p className="form-error">{message}</p>
 }
 
 export default function AddCarPart({
   activePage,
   onNavigate,
   inventoryCategory,
-  onSelectInventoryCategory,
   inventoryFilters,
   onInventorySearchChange,
   setParts,
@@ -131,40 +120,31 @@ export default function AddCarPart({
   }
 
   return (
-    <div className="min-h-svh w-full bg-slate-100 text-slate-900">
+    <div className="page">
       <AppHeader
         activePage={activePage}
         onNavigate={onNavigate}
         inventoryCategory={inventoryCategory}
-        onSelectInventoryCategory={onSelectInventoryCategory}
         inventoryFilters={inventoryFilters}
         onInventorySearchChange={onInventorySearchChange}
       />
 
-      <div className="border-b border-slate-200 bg-white">
-        <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
-          <p className="text-sm font-medium uppercase tracking-wider text-amber-600">
-            Inventory
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            Add new car part
-          </h1>
-          <p className="mt-2 text-base text-slate-600">
+      <div className="page-header">
+        <div className="page-header__inner">
+          <p className="page-header__eyebrow">Inventory</p>
+          <h1 className="page-header__title">Add new car part</h1>
+          <p className="page-header__description">
             Add one or more parts to the preview list, review them, then confirm
             to save.
           </p>
         </div>
       </div>
 
-      <main className="w-full px-4 py-8 sm:px-6 lg:px-8">
-        <section className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <form
-            onSubmit={onAddToPreview}
-            noValidate
-            className="grid gap-8 p-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
-          >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <label className="block text-sm sm:col-span-2 lg:col-span-3">
+      <main className="page-main">
+        <section className="section-card--full">
+          <form onSubmit={onAddToPreview} noValidate className="add-part-form">
+            <div className="add-part-form__fields">
+              <label className="form-field add-part-form__field--wide">
                 <RequiredLabel>Car part</RequiredLabel>
                 <input
                   type="text"
@@ -174,7 +154,7 @@ export default function AddCarPart({
                 />
                 <FieldError message={errors.carPart?.message} />
               </label>
-              <label className="block text-sm">
+              <label className="form-field">
                 <RequiredLabel>Brand</RequiredLabel>
                 <input
                   type="text"
@@ -184,7 +164,7 @@ export default function AddCarPart({
                 />
                 <FieldError message={errors.brand?.message} />
               </label>
-              <label className="block text-sm">
+              <label className="form-field">
                 <RequiredLabel>Category</RequiredLabel>
                 <select
                   {...register('category', categoryRules)}
@@ -198,7 +178,7 @@ export default function AddCarPart({
                 </select>
                 <FieldError message={errors.category?.message} />
               </label>
-              <label className="block text-sm">
+              <label className="form-field">
                 <RequiredLabel>Price</RequiredLabel>
                 <input
                   type="number"
@@ -210,8 +190,8 @@ export default function AddCarPart({
                 />
                 <FieldError message={errors.price?.message} />
               </label>
-              <label className="block text-sm">
-                <span className="font-medium text-slate-700">Quantity</span>
+              <label className="form-field">
+                <span className="form-label">Quantity</span>
                 <input
                   type="number"
                   min="0"
@@ -222,13 +202,13 @@ export default function AddCarPart({
                 />
                 <FieldError message={errors.quantity?.message} />
               </label>
-              <label className="block text-sm sm:col-span-2 lg:col-span-3">
-                <span className="font-medium text-slate-700">
+              <label className="form-field add-part-form__field--wide">
+                <span className="form-label">
                   Availability status
                 </span>
                 <select
                   {...register('availabilityStatus')}
-                  className={inputClass}
+                  className="form-input"
                 >
                   {availabilityOptions.map((status) => (
                     <option key={status} value={status}>
@@ -237,7 +217,7 @@ export default function AddCarPart({
                   ))}
                 </select>
               </label>
-              <div className="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-3">
+              <div className="add-part-form__actions">
                 <Button type="submit" variant="primary" icon={<PlusIcon />}>
                   Add to preview
                 </Button>
@@ -250,7 +230,7 @@ export default function AddCarPart({
               </div>
             </div>
 
-            <div className="xl:border-l xl:border-slate-200 xl:pl-8">
+            <div className="add-part-form__sidebar">
               <RequiredLabel>Part picture</RequiredLabel>
               <Controller
                 name="imageUrl"
@@ -266,8 +246,10 @@ export default function AddCarPart({
                       previewAlt={carPartValue.trim() || 'Part preview'}
                       previewId="add-preview"
                     />
-                    <label className="mt-4 block text-sm">
-                      <span className="text-slate-600">Or paste an image URL</span>
+                    <label className="picture-dropzone__url-label">
+                      <span className="picture-dropzone__url-label-text">
+                        Or paste an image URL
+                      </span>
                       <input
                         type="url"
                         value={
@@ -289,7 +271,7 @@ export default function AddCarPart({
           </form>
 
           {showConfirm && (
-            <div className="border-t border-slate-200 px-6 pb-6">
+            <div className="add-part-preview-footer">
               <PartPreviewTable
                 title="Parts to be added"
                 description="Review the list below. Confirm to save all parts to inventory, or remove any you do not want."
@@ -301,7 +283,7 @@ export default function AddCarPart({
           )}
 
           {draftParts.length > 0 && (
-            <div className="flex gap-3 border-t border-slate-200 px-6 py-6">
+            <div className="section-card__footer-row">
               <Button variant="accent" onClick={handleConfirm}>
                 Confirm and save ({draftParts.length})
               </Button>

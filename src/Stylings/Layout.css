@@ -1,0 +1,48 @@
+/* Shared page layout */
+.page {
+  @apply min-h-svh w-full bg-slate-100 text-slate-900;
+}
+
+.page-header {
+  @apply border-b border-slate-200 bg-white;
+}
+
+.page-header__inner {
+  @apply w-full px-4 py-8 sm:px-6 lg:px-8;
+}
+
+.page-header__eyebrow {
+  @apply text-sm font-medium uppercase tracking-wider text-amber-600;
+}
+
+.page-header__title {
+  @apply mt-1 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl;
+}
+
+.page-header__description {
+  @apply mt-2 text-base text-slate-600;
+}
+
+.page-main {
+  @apply w-full px-4 py-8 sm:px-6 lg:px-8;
+}
+
+.section-card {
+  @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+}
+
+.section-card--full {
+  @apply w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+}
+
+.section-card__header {
+  @apply border-b border-slate-200 px-6 py-4;
+}
+
+.section-card__footer {
+  @apply flex flex-wrap gap-3 border-t border-slate-200 px-6 py-6;
+}
+
+.section-card__footer-row {
+  @apply flex gap-3 border-t border-slate-200 px-6 py-6;
+}

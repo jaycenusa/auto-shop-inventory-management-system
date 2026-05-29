@@ -1,0 +1,27 @@
+.add-part-form {
+  @apply grid gap-8 p-6 xl:grid-cols-[minmax(0,1fr)_22rem];
+}
+
+.add-part-form__fields {
+  @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.add-part-form__field--wide {
+  @apply sm:col-span-2 lg:col-span-3;
+}
+
+.add-part-form__actions {
+  @apply flex flex-wrap gap-3 sm:col-span-2 lg:col-span-3;
+}
+
+.add-part-form__sidebar {
+  @apply xl:border-l xl:border-slate-200 xl:pl-8;
+}
+
+.add-part-form__preview-spacing {
+  @apply mt-2;
+}
+
+.add-part-preview-footer {
+  @apply border-t border-slate-200 px-6 pb-6;
+}

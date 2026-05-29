@@ -25,36 +25,36 @@ export default function PartCompareTable({ changes }: PartCompareTableProps) {
       title="Review changes before confirming"
       description="Compare original values with your updates. Strikethrough shows the previous value."
     >
-      <InventoryTable minWidth="min-w-[840px]" borderClassName="border-amber-200">
+      <InventoryTable minWidth="compare" borderVariant="amber">
         {changes.map(({ before, after }) => (
           <tr key={after.id}>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <CompareImageCell
                 beforeSrc={getPartImageUrl(before)}
                 afterSrc={getPartImageUrl(after)}
                 alt={after.carPart}
               />
             </td>
-            <td className="px-4 py-3 font-medium text-slate-900">
+            <td className="table-cell--emphasis">
               <CompareCell before={before.carPart} after={after.carPart} />
             </td>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <CompareCell before={before.brand} after={after.brand} />
             </td>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <CompareCell before={before.category} after={after.category} />
             </td>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <CompareCell
                 before={before.price}
                 after={after.price}
                 format={(v) => `$${Number(v).toFixed(2)}`}
               />
             </td>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <CompareCell before={before.quantity} after={after.quantity} />
             </td>
-            <td className="px-4 py-3">
+            <td className="table-cell">
               <CompareCell
                 before={before.availabilityStatus}
                 after={after.availabilityStatus}

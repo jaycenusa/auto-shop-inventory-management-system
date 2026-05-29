@@ -36,20 +36,14 @@ type ModifyPartsFormValues = {
   parts: InventoryPart[]
 }
 
-const cellInputClass =
-  'w-full min-w-[5rem] rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500'
-
-const cellInputErrorClass =
-  'border-red-500 focus:border-red-500 focus:ring-red-500'
-
 function cellClass(hasError: boolean) {
-  return `${cellInputClass} ${hasError ? cellInputErrorClass : ''}`
+  return `form-cell-input${hasError ? ' form-cell-input--error' : ''}`
 }
 
 function RequiredHeader({ children }: { children: ReactNode }) {
   return (
     <>
-      {children} <span className="text-red-600">*</span>
+      {children} <span className="form-required-mark">*</span>
     </>
   )
 }
@@ -58,7 +52,6 @@ export default function ModifyCarPart({
   activePage,
   onNavigate,
   inventoryCategory,
-  onSelectInventoryCategory,
   inventoryFilters,
   onInventorySearchChange,
   parts,
@@ -146,33 +139,28 @@ export default function ModifyCarPart({
   const hasActiveFilters = hasActiveInventoryFilters(filters)
 
   return (
-    <div className="min-h-svh w-full bg-slate-100 text-slate-900">
+    <div className="page">
       <AppHeader
         activePage={activePage}
         onNavigate={onNavigate}
         inventoryCategory={inventoryCategory}
-        onSelectInventoryCategory={onSelectInventoryCategory}
         inventoryFilters={inventoryFilters}
         onInventorySearchChange={onInventorySearchChange}
       />
 
-      <div className="border-b border-slate-200 bg-white">
-        <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
-          <p className="text-sm font-medium uppercase tracking-wider text-amber-600">
-            Inventory
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            Modify car parts
-          </h1>
-          <p className="mt-2 text-base text-slate-600">
+      <div className="page-header">
+        <div className="page-header__inner">
+          <p className="page-header__eyebrow">Inventory</p>
+          <h1 className="page-header__title">Modify car parts</h1>
+          <p className="page-header__description">
             Filter parts, edit multiple items, preview changes, then confirm.
           </p>
         </div>
       </div>
 
-      <main className="w-full px-4 py-8 sm:px-6 lg:px-8">
-        <section className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-6 py-4">
+      <main className="page-main">
+        <section className="section-card--full">
+          <div className="section-card__header">
             <Filter
               filters={filters}
               brandOptions={brandOptions}
@@ -183,44 +171,38 @@ export default function ModifyCarPart({
           </div>
 
           {validationMessage && (
-            <div
-              className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-              role="alert"
-            >
+            <div className="alert-error" role="alert">
               {validationMessage}
             </div>
           )}
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-full text-left text-sm">
+          <div className="modify-table-scroll">
+            <table className="modify-table">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="px-4 py-3 font-semibold">
+                <tr className="modify-table__head-row">
+                  <th className="modify-table__th">
                     <RequiredHeader>Picture</RequiredHeader>
                   </th>
-                  <th className="px-4 py-3 font-semibold">
+                  <th className="modify-table__th">
                     <RequiredHeader>Car part</RequiredHeader>
                   </th>
-                  <th className="px-4 py-3 font-semibold">
+                  <th className="modify-table__th">
                     <RequiredHeader>Brand</RequiredHeader>
                   </th>
-                  <th className="px-4 py-3 font-semibold">
+                  <th className="modify-table__th">
                     <RequiredHeader>Category</RequiredHeader>
                   </th>
-                  <th className="px-4 py-3 font-semibold">
+                  <th className="modify-table__th">
                     <RequiredHeader>Price</RequiredHeader>
                   </th>
-                  <th className="px-4 py-3 font-semibold">Quantity</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="modify-table__th">Quantity</th>
+                  <th className="modify-table__th">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="modify-table__body">
                 {fields.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="px-4 py-12 text-center text-slate-500"
-                    >
+                    <td colSpan={7} className="modify-table__empty">
                       No parts match your filters.
                     </td>
                   </tr>
@@ -248,8 +230,8 @@ export default function ModifyCarPart({
                     )
 
                     return (
-                    <tr key={field.fieldKey} className="hover:bg-slate-50">
-                      <td className="px-4 py-2 align-top">
+                    <tr key={field.fieldKey} className="modify-table__row">
+                      <td className="modify-table__cell modify-table__cell--top">
                         <Controller
                           name={`parts.${index}.imageUrl`}
                           control={control}
@@ -269,7 +251,7 @@ export default function ModifyCarPart({
                           )}
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="modify-table__cell">
                         <input
                           type="text"
                           {...carPartField}
@@ -282,7 +264,7 @@ export default function ModifyCarPart({
                           )}
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="modify-table__cell">
                         <input
                           type="text"
                           {...brandField}
@@ -295,7 +277,7 @@ export default function ModifyCarPart({
                           )}
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="modify-table__cell">
                         <select
                           {...categoryField}
                           onChange={(e) => {
@@ -313,7 +295,7 @@ export default function ModifyCarPart({
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="modify-table__cell">
                         <input
                           type="number"
                           min="0"
@@ -328,7 +310,7 @@ export default function ModifyCarPart({
                           )}
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="modify-table__cell">
                         <input
                           type="number"
                           min="0"
@@ -343,14 +325,14 @@ export default function ModifyCarPart({
                           )}
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="modify-table__cell">
                         <select
                           {...statusField}
                           onChange={(e) => {
                             void statusField.onChange(e)
                             onFieldChange()
                           }}
-                          className={cellInputClass}
+                          className="form-cell-input"
                         >
                           {availabilityOptions.map((s) => (
                             <option key={s} value={s}>
@@ -367,7 +349,7 @@ export default function ModifyCarPart({
             </table>
           </div>
 
-          <div className="flex flex-wrap gap-3 border-t border-slate-200 px-6 py-6">
+          <div className="section-card__footer">
             <Button
               variant="primary"
               onClick={() => void handlePreview()}
@@ -381,13 +363,13 @@ export default function ModifyCarPart({
           </div>
 
           {showCompare && (
-            <div className="border-t border-slate-200 px-6 pb-6">
+            <div className="modify-compare-footer">
               <PartCompareTable changes={changes} />
             </div>
           )}
 
           {showCompare && changes.length > 0 && (
-            <div className="flex gap-3 border-t border-slate-200 px-6 py-6">
+            <div className="section-card__footer-row">
               <Button variant="accent" onClick={() => void handleConfirm()}>
                 Confirm changes
               </Button>

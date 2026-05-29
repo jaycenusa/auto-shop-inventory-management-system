@@ -24,56 +24,66 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   icon?: ReactNode
 }
 
-const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-4 py-2.5 text-sm',
-}
-
-function getVariantClasses(
+function buildButtonClass(
   variant: ButtonVariant,
   active: boolean,
   size: ButtonSize,
+  fullWidth: boolean,
+  className: string,
 ): string {
+  const classes = ['btn', `btn--${size}`]
+
+  if (fullWidth) classes.push('btn--full')
+
   switch (variant) {
     case 'primary':
-      return `inline-flex items-center justify-center gap-2 rounded-lg bg-slate-800 font-semibold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 ${sizeClasses[size]}`
+      classes.push('btn--primary')
+      break
     case 'accent':
-      return `inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 font-semibold text-slate-900 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40 ${sizeClasses[size]}`
+      classes.push('btn--accent')
+      break
     case 'secondary':
-      return `inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 ${sizeClasses[size]}`
+      classes.push('btn--secondary')
+      break
     case 'outline-accent':
-      return `inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 ${sizeClasses.lg}`
+      classes.push('btn--outline-accent', 'btn--lg')
+      break
     case 'link':
-      return 'text-sm font-medium text-amber-600 transition-colors hover:text-amber-700 disabled:opacity-40'
+      classes.push('btn--link')
+      break
     case 'link-muted':
-      return 'text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 disabled:opacity-40'
+      classes.push('btn--link-muted')
+      break
     case 'danger':
-      return 'text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-40'
+      classes.push('btn--danger')
+      break
     case 'nav':
-      return `rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? 'bg-slate-800 text-amber-400'
-          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-      }`
+      classes.push('btn--nav')
+      if (active) classes.push('btn--nav-active')
+      break
     case 'nav-dropdown':
-      return `block w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-700 ${
-        active ? 'bg-slate-700 text-amber-400' : 'text-slate-200'
-      }`
+      classes.push('btn--nav-dropdown')
+      if (active) classes.push('btn--nav-dropdown-active')
+      break
     case 'pagination':
-      return active
-        ? `min-w-9 rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-slate-900 transition-colors`
-        : `min-w-9 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40`
+      classes.push(active ? 'btn--pagination-active' : 'btn--pagination')
+      break
     case 'quick-action':
-      return 'w-full rounded-lg border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40'
+      classes.push('btn--quick-action')
+      break
     case 'brand':
-      return 'flex items-center gap-3 transition-opacity hover:opacity-90'
+      classes.push('btn--brand')
+      break
     default:
-      return sizeClasses[size]
+      break
   }
+
+  if (className) classes.push(className)
+
+  return classes.join(' ')
 }
 
-export function PlusIcon({ className = 'h-5 w-5 shrink-0' }: { className?: string }) {
+export function PlusIcon({ className = 'btn-icon' }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -86,7 +96,7 @@ export function PlusIcon({ className = 'h-5 w-5 shrink-0' }: { className?: strin
   )
 }
 
-export function EditIcon({ className = 'h-5 w-5 shrink-0' }: { className?: string }) {
+export function EditIcon({ className = 'btn-icon' }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -99,7 +109,7 @@ export function EditIcon({ className = 'h-5 w-5 shrink-0' }: { className?: strin
   )
 }
 
-export function UploadIcon({ className = 'h-4 w-4' }: { className?: string }) {
+export function UploadIcon({ className = 'btn-icon btn-icon--sm' }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -124,13 +134,10 @@ export default function Button({
   children,
   ...props
 }: ButtonProps) {
-  const variantClass = getVariantClasses(variant, active, size)
-  const widthClass = fullWidth ? 'w-full' : ''
-
   return (
     <button
       type={type}
-      className={`${variantClass} ${widthClass} ${className}`.trim()}
+      className={buildButtonClass(variant, active, size, fullWidth, className)}
       {...props}
     >
       {icon}

@@ -14,6 +14,15 @@ type PictureDropzoneProps = {
   validationError?: string | null
 }
 
+function dropzoneStateClass(
+  validationError: string | null,
+  isDragging: boolean,
+): string {
+  if (validationError) return 'picture-dropzone--error'
+  if (isDragging) return 'picture-dropzone--dragging'
+  return 'picture-dropzone--idle'
+}
+
 export default function PictureDropzone({
   imageUrl,
   onImageUrlChange,
@@ -72,15 +81,13 @@ export default function PictureDropzone({
 
   const openFilePicker = () => inputRef.current?.click()
 
-  const dropzoneClass = compact
-    ? 'flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-3 py-3'
-    : 'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8'
-
-  const dragStateClass = validationError
-    ? 'border-red-500 bg-red-50'
-    : isDragging
-      ? 'border-amber-500 bg-amber-50'
-      : 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'
+  const dropzoneClass = [
+    'picture-dropzone',
+    compact ? '' : 'picture-dropzone--default',
+    dropzoneStateClass(validationError, isDragging),
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className={className}>
@@ -89,7 +96,7 @@ export default function PictureDropzone({
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
-        className={`${dropzoneClass} ${dragStateClass} transition-colors`}
+        className={dropzoneClass}
       >
         <input
           ref={inputRef}
@@ -110,9 +117,9 @@ export default function PictureDropzone({
         )}
 
         {!compact && (
-          <div className="text-center">
+          <div className="picture-dropzone__content-center">
             <svg
-              className="mx-auto h-10 w-10 text-slate-400"
+              className="picture-dropzone__upload-icon"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -125,10 +132,8 @@ export default function PictureDropzone({
                 d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
               />
             </svg>
-            <p className="mt-2 text-sm font-medium text-slate-700">
-              Drag and drop a picture here
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="picture-dropzone__title">Drag and drop a picture here</p>
+            <p className="picture-dropzone__hint">
               JPEG, PNG, WebP, or GIF · max 2 MB
             </p>
           </div>
@@ -145,14 +150,12 @@ export default function PictureDropzone({
         </Button>
 
         {compact && (
-          <p className="text-center text-xs text-slate-500">
-            or drag and drop
-          </p>
+          <p className="picture-dropzone__compact-hint">or drag and drop</p>
         )}
       </div>
 
       {(validationError || error) && (
-        <p className="mt-2 text-sm text-red-600" role="alert">
+        <p className="picture-dropzone__error" role="alert">
           {validationError ?? error}
         </p>
       )}
@@ -164,9 +167,7 @@ export default function PictureDropzone({
             setError(null)
             onImageUrlChange('')
           }}
-          className={
-            compact ? 'text-xs' : 'mt-2'
-          }
+          className={compact ? 'picture-dropzone__remove--compact' : 'picture-dropzone__remove'}
         >
           Remove picture
         </Button>

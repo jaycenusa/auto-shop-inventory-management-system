@@ -1,0 +1,135 @@
+.part-image {
+  @apply rounded-lg border border-slate-200 bg-slate-100 object-cover;
+}
+
+.part-image--sm {
+  @apply h-10 w-10;
+}
+
+.part-image--md {
+  @apply h-14 w-14;
+}
+
+.compare-images {
+  @apply flex items-center gap-1;
+}
+
+.compare-images__arrow {
+  @apply text-amber-600;
+}
+
+.status-badge {
+  @apply inline-flex rounded-full px-2.5 py-1 text-xs font-medium;
+}
+
+.status-badge--in-stock {
+  @apply bg-emerald-100 text-emerald-800;
+}
+
+.status-badge--low-stock {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.status-badge--out-of-stock {
+  @apply bg-red-100 text-red-800;
+}
+
+.table-cell {
+  @apply px-4 py-3 text-slate-700;
+}
+
+.table-cell--header {
+  @apply px-4 py-3 font-semibold text-slate-900;
+}
+
+.table-cell--emphasis {
+  @apply px-4 py-3 font-medium text-slate-900;
+}
+
+.compare-cell {
+  @apply text-slate-700;
+}
+
+.compare-cell__before {
+  @apply text-slate-400 line-through;
+}
+
+.compare-cell__arrow {
+  @apply mx-1 text-amber-600;
+}
+
+.compare-cell__after {
+  @apply font-medium text-amber-700;
+}
+
+.inventory-table-wrap {
+  @apply overflow-x-auto rounded-lg border bg-white;
+}
+
+.inventory-table-wrap--amber {
+  @apply border-amber-200;
+}
+
+.inventory-table {
+  @apply w-full text-left text-sm;
+}
+
+.inventory-table--wide {
+  @apply min-w-[760px];
+}
+
+.inventory-table--compare {
+  @apply min-w-[840px];
+}
+
+.inventory-table__head-row {
+  @apply border-b border-slate-200 bg-slate-50;
+}
+
+.inventory-table__body {
+  @apply divide-y divide-slate-100;
+}
+
+.table-section {
+  @apply mt-6 rounded-xl border p-4;
+}
+
+.table-section--default {
+  @apply border-slate-200 bg-slate-50;
+}
+
+.table-section--amber {
+  @apply border-amber-200 bg-amber-50;
+}
+
+.table-section__title {
+  @apply text-base font-semibold;
+}
+
+.table-section__title--default {
+  @apply text-slate-900;
+}
+
+.table-section__title--amber {
+  @apply text-amber-900;
+}
+
+.table-section__description {
+  @apply mt-1 text-sm;
+}
+
+.table-section__description--default {
+  @apply text-slate-600;
+}
+
+.table-section__description--amber {
+  @apply text-amber-800;
+}
+
+.table-section__content {
+  @apply mt-4;
+}
+
+.preview-badge {
+  @apply ml-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800;
+}
