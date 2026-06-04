@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { OrderCartProvider } from './Context/OrderCartContext'
 import { AuthProvider } from './OAuth/AuthContext'
+import { ImageZoomProvider } from './Utils/ImageZoom'
 import Homepage from './Pages/Homepage'
 import InventoryPage from './Pages/InventoryPage'
 import CustomersPage from './Pages/CustomersPage'
@@ -100,6 +101,7 @@ function App() {
     content = (
       <Homepage
         {...headerProps}
+        parts={parts}
         customers={customers}
         onViewAllCustomers={() => handleNavigate('customers')}
         onViewCustomer={(customerId) => openCustomerInfo(customerId)}
@@ -109,7 +111,9 @@ function App() {
 
   return (
     <AuthProvider>
-      <OrderCartProvider>{content}</OrderCartProvider>
+      <OrderCartProvider>
+        <ImageZoomProvider>{content}</ImageZoomProvider>
+      </OrderCartProvider>
     </AuthProvider>
   )
 }
