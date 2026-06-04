@@ -1,7 +1,5 @@
 import type { InventoryCategory } from '../Database/InventoryData'
-import HeaderAuth from '../OAuth/HeaderAuth'
 import type { InventoryFilterState } from '../Shared/Filter'
-import Button from '../Shared/Button'
 import NavBar from './NavBar'
 
 export type AppPage =
@@ -28,18 +26,6 @@ export default function AppHeader({
 }: AppHeaderProps) {
   return (
     <header className="app-header">
-      <div className="app-header__brand-row">
-        <Button variant="brand" onClick={() => onNavigate('dashboard')}>
-          <span className="app-header__logo">AS</span>
-          <div className="app-header__brand-text">
-            <p className="app-header__title">AutoShop IMS</p>
-            <p className="app-header__subtitle">Inventory Management</p>
-          </div>
-        </Button>
-
-        <HeaderAuth />
-      </div>
-
       <NavBar
         activePage={activePage}
         onNavigate={onNavigate}
