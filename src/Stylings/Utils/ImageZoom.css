@@ -1,0 +1,35 @@
+.image-zoom__backdrop {
+  @apply fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/75 p-4 backdrop-blur-sm;
+}
+
+.image-zoom__dialog {
+  @apply relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl;
+}
+
+.image-zoom__header {
+  @apply flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3;
+}
+
+.image-zoom__title {
+  @apply truncate text-sm font-medium text-slate-900;
+}
+
+.image-zoom__close {
+  @apply shrink-0 rounded-lg p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900;
+}
+
+.image-zoom__close-icon {
+  @apply h-5 w-5;
+}
+
+.image-zoom__image {
+  @apply max-h-[calc(90vh-4rem)] w-full object-contain bg-slate-50;
+}
+
+.part-image--zoomable {
+  @apply cursor-zoom-in transition-opacity hover:opacity-90;
+}
+
+.part-image--zoomable:focus-visible {
+  @apply outline outline-2 outline-offset-2 outline-amber-500;
+}

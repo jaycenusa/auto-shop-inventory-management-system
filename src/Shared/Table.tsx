@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
 import type { AvailabilityStatus } from '../Database/InventoryData'
+import {
+  getZoomableImageProps,
+  useImageZoomContext,
+} from '../Utils/ImageZoom'
 
 export const PART_TABLE_HEADERS = [
   'Picture',
@@ -24,22 +28,31 @@ export function PartImage({
   src,
   alt,
   size = 'md',
+  zoomable = true,
 }: {
   src: string
   alt: string
   size?: 'sm' | 'md'
+  /** When true and ImageZoomProvider is mounted, click opens zoom overlay. */
+  zoomable?: boolean
 }) {
   const sizeClass = size === 'sm' ? 'part-image--sm' : 'part-image--md'
+  const imageZoom = useImageZoomContext()
+  const canZoom = zoomable && imageZoom !== null
+  const zoomProps = canZoom
+    ? getZoomableImageProps(imageZoom.openImageZoom, src, alt)
+    : {}
 
   return (
     <img
       src={src}
       alt={alt}
-      className={`part-image ${sizeClass}`}
+      className={`part-image ${sizeClass}${canZoom ? ' part-image--zoomable' : ''}`}
       onError={(e) => {
         e.currentTarget.onerror = null
         e.currentTarget.src = FALLBACK_IMAGE
       }}
+      {...zoomProps}
     />
   )
 }
