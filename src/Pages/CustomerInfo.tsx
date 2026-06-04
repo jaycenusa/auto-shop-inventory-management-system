@@ -9,14 +9,18 @@ import {
   createEmptyCustomer,
   createEmptyTransaction,
   createEmptyVehicle,
+  CUSTOMER_COUNTRY,
   type Customer,
+  type CustomerGender,
   type CustomerTransaction,
   type CustomerVehicle,
 } from '../Database/CustomerData'
 import Button, { EditIcon, PlusIcon } from '../Shared/Button'
 import TablePagination from '../Shared/TablePagination'
 import {
+  customerAddressRules,
   customerFullNameRules,
+  customerGenderRules,
   customerPhoneRules,
 } from '../Utils/CustomerValidation'
 import { usePagination } from '../Utils/usePagination'
@@ -31,6 +35,9 @@ type CustomerInfoProps = AppHeaderProps & {
 type CustomerFormValues = {
   fullName: string
   phone: string
+  gender: CustomerGender | ''
+  address: string
+  country: typeof CUSTOMER_COUNTRY
 }
 
 function fieldClass(hasError: boolean) {
@@ -84,6 +91,9 @@ export default function CustomerInfo({
     defaultValues: {
       fullName: existing?.fullName ?? '',
       phone: existing?.phone ?? '',
+      gender: existing?.gender ?? '',
+      address: existing?.address ?? '',
+      country: CUSTOMER_COUNTRY,
     },
     mode: 'onSubmit',
   })
@@ -92,6 +102,9 @@ export default function CustomerInfo({
     reset({
       fullName: existing?.fullName ?? '',
       phone: existing?.phone ?? '',
+      gender: existing?.gender ?? '',
+      address: existing?.address ?? '',
+      country: CUSTOMER_COUNTRY,
     })
     setVehicles(existing?.vehicles ?? [])
     setTransactions(existing?.transactions ?? [])
@@ -142,6 +155,9 @@ export default function CustomerInfo({
       id: existing?.id ?? createEmptyCustomer().id,
       fullName: data.fullName.trim(),
       phone: data.phone.trim(),
+      gender: data.gender as CustomerGender,
+      address: data.address.trim(),
+      country: CUSTOMER_COUNTRY,
       vehicles,
       transactions,
     }
@@ -231,6 +247,46 @@ export default function CustomerInfo({
                   placeholder="(555) 123-4567"
                 />
                 <FieldError message={errors.phone?.message} />
+              </label>
+
+              <label className="form-field">
+                <RequiredLabel>Gender</RequiredLabel>
+                <select
+                  {...register('gender', customerGenderRules)}
+                  className={fieldClass(Boolean(errors.gender))}
+                >
+                  <option value="" disabled>
+                    Select gender
+                  </option>
+                  <option value="F">F</option>
+                  <option value="M">M</option>
+                </select>
+                <FieldError message={errors.gender?.message} />
+              </label>
+
+              <label className="form-field">
+                <span className="form-label">Country</span>
+                <select
+                  className="form-input"
+                  value={CUSTOMER_COUNTRY}
+                  disabled
+                  aria-label="Country"
+                >
+                  <option value={CUSTOMER_COUNTRY}>USA</option>
+                </select>
+                <input type="hidden" {...register('country')} />
+              </label>
+
+              <label className="form-field customer-info-form__field--wide">
+                <RequiredLabel>Address</RequiredLabel>
+                <input
+                  type="text"
+                  {...register('address', customerAddressRules)}
+                  className={fieldClass(Boolean(errors.address))}
+                  placeholder="Street, city, state, ZIP"
+                  autoComplete="street-address"
+                />
+                <FieldError message={errors.address?.message} />
               </label>
             </div>
           </form>

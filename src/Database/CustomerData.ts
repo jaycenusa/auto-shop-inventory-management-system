@@ -15,10 +15,17 @@ export type CustomerVehicle = {
   vin: string
 }
 
+export const CUSTOMER_COUNTRY = 'USA' as const
+
+export type CustomerGender = 'F' | 'M'
+
 export type Customer = {
   id: string
   fullName: string
   phone: string
+  gender: CustomerGender | ''
+  address: string
+  country: typeof CUSTOMER_COUNTRY
   vehicles: CustomerVehicle[]
   transactions: CustomerTransaction[]
 }
@@ -38,6 +45,9 @@ export const initialCustomers: Customer[] = [
     id: 'cust-1',
     fullName: 'Jordan Martinez',
     phone: '(555) 201-8842',
+    gender: 'F',
+    address: '742 Evergreen Terrace, Springfield, IL 62704',
+    country: CUSTOMER_COUNTRY,
     vehicles: [
       {
         id: 'veh-1',
@@ -73,6 +83,9 @@ export function createEmptyCustomer(): Customer {
     id: `cust-${Date.now()}`,
     fullName: '',
     phone: '',
+    gender: '',
+    address: '',
+    country: CUSTOMER_COUNTRY,
     vehicles: [],
     transactions: [],
   }

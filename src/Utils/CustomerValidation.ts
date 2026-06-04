@@ -14,6 +14,17 @@ export const customerPhoneRules = {
   minLength: { value: 7, message: 'Enter a valid phone number' },
 }
 
+export const customerGenderRules = {
+  required: 'Gender is required',
+  validate: (value: string) =>
+    value === 'F' || value === 'M' || 'Select F or M',
+}
+
+export const customerAddressRules = {
+  required: 'Address is required',
+  minLength: { value: 5, message: 'Enter a complete address' },
+}
+
 export const customerCarBrandRules = {
   required: 'Car brand is required',
 }
