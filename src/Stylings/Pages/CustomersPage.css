@@ -1,0 +1,15 @@
+.customers-toolbar {
+  @apply flex flex-wrap items-center justify-between gap-3;
+}
+
+.customers-toolbar__title {
+  @apply text-lg font-semibold text-slate-900;
+}
+
+.customers-table__actions {
+  @apply flex gap-2;
+}
+
+.customers-table__empty {
+  @apply px-4 py-12 text-center text-slate-500;
+}

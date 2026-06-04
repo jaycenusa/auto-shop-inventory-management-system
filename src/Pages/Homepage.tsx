@@ -1,7 +1,13 @@
 import AppHeader, { type AppHeaderProps } from './Header'
+import RecentActivity from '../Components/RecentActivity'
+import type { Customer } from '../Database/CustomerData'
 import Button from '../Shared/Button'
 
-type HomepageProps = AppHeaderProps
+type HomepageProps = AppHeaderProps & {
+  customers: Customer[]
+  onViewAllCustomers?: () => void
+  onViewCustomer?: (customerId: string) => void
+}
 
 const stats = [
   { label: 'Total parts', value: '1,248', change: '+12 this week' },
@@ -10,7 +16,12 @@ const stats = [
   { label: 'Monthly spend', value: '$24,580', change: 'On track' },
 ]
 
-export default function Homepage(props: HomepageProps) {
+export default function Homepage({
+  customers,
+  onViewAllCustomers,
+  onViewCustomer,
+  ...props
+}: HomepageProps) {
   return (
     <div className="page">
       <AppHeader {...props} />
@@ -37,23 +48,12 @@ export default function Homepage(props: HomepageProps) {
         </section>
 
         <section className="homepage__grid">
-          <div className="homepage__panel homepage__panel--wide">
-            <h2 className="homepage__panel-title">Recent activity</h2>
-            <p className="homepage__panel-text">
-              Stock updates and order changes will appear here.
-            </p>
-            <ul className="homepage__activity-list">
-              {[
-                'Brake pads restocked — 48 units',
-                'Order #1042 marked as received',
-                'Oil filter SKU-221 below reorder point',
-              ].map((item) => (
-                <li key={item} className="homepage__activity-item">
-                  <span className="homepage__activity-dot" />
-                  {item}
-                </li>
-              ))}
-            </ul>
+          <div className="homepage__panel homepage__panel--wide homepage__panel--flush">
+            <RecentActivity
+              customers={customers}
+              onViewAllCustomers={onViewAllCustomers}
+              onViewCustomer={onViewCustomer}
+            />
           </div>
 
           <div className="homepage__panel">

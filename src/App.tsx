@@ -3,6 +3,8 @@ import { OrderCartProvider } from './Context/OrderCartContext'
 import { AuthProvider } from './OAuth/AuthContext'
 import Homepage from './Pages/Homepage'
 import InventoryPage from './Pages/InventoryPage'
+import CustomersPage from './Pages/CustomersPage'
+import CustomerInfo from './Pages/CustomerInfo'
 import AddCarPart from './Components/AddCarPart'
 import ModifyCarPart from './Components/ModifyCarPart'
 import type { AppPage } from './Pages/Header'
@@ -13,6 +15,10 @@ import {
   type InventoryCategory,
   type InventoryPart,
 } from './Database/InventoryData'
+import {
+  initialCustomers,
+  type Customer,
+} from './Database/CustomerData'
 
 function App() {
   const [page, setPage] = useState<AppPage>('dashboard')
@@ -21,12 +27,22 @@ function App() {
   const [inventoryFilters, setInventoryFilters] =
     useState<InventoryFilterState>(emptyInventoryFilters)
   const [parts, setParts] = useState<InventoryPart[]>(initialParts)
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
+  const [customerEditId, setCustomerEditId] = useState<string | null>(null)
 
   const handleNavigate = (nextPage: AppPage) => {
     if (nextPage === 'inventory') {
       setInventoryCategory(null)
     }
+    if (nextPage !== 'customer-info') {
+      setCustomerEditId(null)
+    }
     setPage(nextPage)
+  }
+
+  const openCustomerInfo = (customerId: string | null) => {
+    setCustomerEditId(customerId)
+    setPage('customer-info')
   }
 
   const handleInventorySearchChange = (carPart: string) => {
@@ -51,6 +67,12 @@ function App() {
     setParts,
   }
 
+  const customerProps = {
+    ...headerProps,
+    customers,
+    setCustomers,
+  }
+
   let content
   if (page === 'add-part') {
     content = <AddCarPart {...inventoryProps} />
@@ -58,8 +80,31 @@ function App() {
     content = <ModifyCarPart {...inventoryProps} />
   } else if (page === 'inventory') {
     content = <InventoryPage {...inventoryProps} />
+  } else if (page === 'customers') {
+    content = (
+      <CustomersPage
+        {...customerProps}
+        onAddCustomer={() => openCustomerInfo(null)}
+        onEditCustomer={(id) => openCustomerInfo(id)}
+      />
+    )
+  } else if (page === 'customer-info') {
+    content = (
+      <CustomerInfo
+        {...customerProps}
+        customerId={customerEditId}
+        onDone={() => handleNavigate('customers')}
+      />
+    )
   } else {
-    content = <Homepage {...headerProps} />
+    content = (
+      <Homepage
+        {...headerProps}
+        customers={customers}
+        onViewAllCustomers={() => handleNavigate('customers')}
+        onViewCustomer={(customerId) => openCustomerInfo(customerId)}
+      />
+    )
   }
 
   return (

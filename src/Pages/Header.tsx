@@ -4,7 +4,13 @@ import type { InventoryFilterState } from '../Shared/Filter'
 import Button from '../Shared/Button'
 import NavBar from './NavBar'
 
-export type AppPage = 'dashboard' | 'inventory' | 'add-part' | 'modify-part'
+export type AppPage =
+  | 'dashboard'
+  | 'inventory'
+  | 'add-part'
+  | 'modify-part'
+  | 'customers'
+  | 'customer-info'
 
 export type AppHeaderProps = {
   activePage: AppPage

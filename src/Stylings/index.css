@@ -8,7 +8,10 @@
 @import './Pages/NavBar.css';
 @import './Pages/Homepage.css';
 @import './Pages/InventoryPage.css';
+@import './Pages/CustomersPage.css';
+@import './Pages/CustomerInfo.css';
 @import './Components/OrderCart.css';
+@import './Components/RecentActivity.css';
 @import './Components/AddCarPart.css';
 @import './Components/ModifyCarPart.css';
 @import './Modal/LoginModal.css';

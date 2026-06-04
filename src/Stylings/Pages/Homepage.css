@@ -30,6 +30,10 @@
   @apply lg:col-span-2;
 }
 
+.homepage__panel--flush {
+  @apply border-0 bg-transparent p-0 shadow-none;
+}
+
 .homepage__panel-title {
   @apply text-lg font-semibold text-slate-900;
 }

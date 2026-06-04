@@ -1,0 +1,23 @@
+.customer-info-form {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+
+.customer-info-form__field--wide {
+  @apply sm:col-span-2;
+}
+
+.customer-info-actions {
+  @apply mt-6 flex flex-wrap gap-3 border-t border-slate-200 pt-6;
+}
+
+.customer-transactions__header {
+  @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+}
+
+.customer-transactions__title {
+  @apply text-base font-semibold text-slate-900;
+}
+
+.customer-transactions__empty {
+  @apply rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500;
+}

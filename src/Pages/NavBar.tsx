@@ -3,6 +3,7 @@ import Button from '../Shared/Button'
 import type { AppPage } from './Header'
 
 const INVENTORY_PAGES: AppPage[] = ['inventory', 'add-part', 'modify-part']
+const CUSTOMER_PAGES: AppPage[] = ['customers', 'customer-info']
 
 type NavBarProps = {
   activePage: AppPage
@@ -13,6 +14,10 @@ type NavBarProps = {
 
 function isInventoryPage(page: AppPage) {
   return INVENTORY_PAGES.includes(page)
+}
+
+function isCustomerPage(page: AppPage) {
+  return CUSTOMER_PAGES.includes(page)
 }
 
 function SearchIcon() {
@@ -68,6 +73,7 @@ export default function NavBar({
   onSearchChange,
 }: NavBarProps) {
   const inventoryActive = isInventoryPage(activePage)
+  const customersActive = isCustomerPage(activePage)
 
   return (
     <nav className="navbar" aria-label="Main navigation">
@@ -95,6 +101,19 @@ export default function NavBar({
                 onClick={() => onNavigate('inventory')}
               >
                 Inventory
+              </Button>
+            </li>
+
+            <li>
+              <Button
+                variant="nav"
+                active={customersActive}
+                className={
+                  customersActive ? 'btn--nav-on-bar-active' : undefined
+                }
+                onClick={() => onNavigate('customers')}
+              >
+                Customers
               </Button>
             </li>
           </ul>
