@@ -1,6 +1,18 @@
+import { useEffect, useMemo, useState } from 'react'
+import CustomerFilter from '../Components/CustomerFilter'
 import AppHeader, { type AppHeaderProps } from './Header'
-import type { Customer } from '../Database/CustomerData'
+import {
+  formatVehicleLabel,
+  getPrimaryVehicle,
+  type Customer,
+} from '../Database/CustomerData'
 import Button, { EditIcon, PlusIcon } from '../Shared/Button'
+import {
+  emptyCustomerFilters,
+  filterCustomers,
+  hasActiveCustomerFilters,
+  type CustomerFilterState,
+} from '../Utils/CustomerFilters'
 
 type CustomersPageProps = AppHeaderProps & {
   customers: Customer[]
@@ -11,11 +23,12 @@ type CustomersPageProps = AppHeaderProps & {
 const CUSTOMER_HEADERS = [
   'Full name',
   'Phone',
-  'Car brand',
-  'Car model',
-  'VIN',
+  'Vehicles',
+  'Primary vehicle',
   'Actions',
 ] as const
+
+const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const
 
 export default function CustomersPage({
   activePage,
@@ -27,6 +40,59 @@ export default function CustomersPage({
   onAddCustomer,
   onEditCustomer,
 }: CustomersPageProps) {
+  const [filters, setFilters] = useState<CustomerFilterState>(emptyCustomerFilters)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0])
+
+  const filteredCustomers = useMemo(
+    () => filterCustomers(customers, filters),
+    [customers, filters],
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize))
+
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredCustomers.slice(start, start + pageSize)
+  }, [filteredCustomers, currentPage, pageSize])
+
+  const rangeStart =
+    filteredCustomers.length === 0
+      ? 0
+      : (currentPage - 1) * pageSize + 1
+  const rangeEnd = Math.min(currentPage * pageSize, filteredCustomers.length)
+
+  const hasActiveFilters = hasActiveCustomerFilters(filters)
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters.name, filters.phone])
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.min(Math.max(1, page), totalPages))
+  }
+
+  const handlePageSizeChange = (nextPageSize: number) => {
+    setPageSize(nextPageSize)
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setFilters(emptyCustomerFilters)
+    setCurrentPage(1)
+  }
+
+  const emptyMessage =
+    customers.length === 0
+      ? 'No customers yet. Add your first customer to get started.'
+      : 'No customers match your filters. Try adjusting your search.'
+
   return (
     <div className="page">
       <AppHeader
@@ -56,48 +122,129 @@ export default function CustomersPage({
             </Button>
           </div>
 
-          <div className="inventory-table-wrap">
-            <table className="inventory-table inventory-table--wide">
-              <thead>
-                <tr className="inventory-table__head-row">
-                  {CUSTOMER_HEADERS.map((header) => (
-                    <th key={header} className="table-cell--header">
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="inventory-table__body">
-                {customers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="customers-table__empty">
-                      No customers yet. Add your first customer to get started.
-                    </td>
-                  </tr>
-                ) : (
-                  customers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td className="table-cell--emphasis">{customer.fullName}</td>
-                      <td className="table-cell">{customer.phone}</td>
-                      <td className="table-cell">{customer.carBrand}</td>
-                      <td className="table-cell">{customer.carModel}</td>
-                      <td className="table-cell">{customer.vin}</td>
-                      <td className="table-cell">
-                        <div className="customers-table__actions">
-                          <Button
-                            variant="secondary"
-                            icon={<EditIcon />}
-                            onClick={() => onEditCustomer(customer.id)}
-                          >
-                            Edit
-                          </Button>
-                        </div>
-                      </td>
+          <div className="customers-section">
+            <CustomerFilter
+              filters={filters}
+              onChange={setFilters}
+              onClear={clearFilters}
+              showClear={hasActiveFilters}
+            />
+
+            <div className="customers-table-area">
+              <div className="inventory-table-scroll customers-table-scroll">
+                <table className="inventory-data-table customers-data-table">
+                  <thead>
+                    <tr className="inventory-data-table__head-row">
+                      {CUSTOMER_HEADERS.map((header) => (
+                        <th key={header} className="inventory-data-table__th">
+                          {header}
+                        </th>
+                      ))}
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="inventory-data-table__body">
+                    {paginatedCustomers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="inventory-data-table__empty">
+                          {emptyMessage}
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedCustomers.map((customer) => (
+                        <tr
+                          key={customer.id}
+                          className="inventory-data-table__row"
+                        >
+                          <td className="inventory-data-table__td--name">
+                            {customer.fullName}
+                          </td>
+                          <td className="inventory-data-table__td">
+                            {customer.phone}
+                          </td>
+                          <td className="inventory-data-table__td">
+                            {customer.vehicles.length}
+                          </td>
+                          <td className="inventory-data-table__td">
+                            {formatVehicleLabel(getPrimaryVehicle(customer))}
+                          </td>
+                          <td className="inventory-data-table__td">
+                            <div className="customers-table__actions">
+                              <Button
+                                variant="secondary"
+                                icon={<EditIcon />}
+                                onClick={() => onEditCustomer(customer.id)}
+                              >
+                                Edit
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="inventory-pagination customers-pagination">
+                <div className="inventory-pagination__meta">
+                  <p className="inventory-pagination__count">
+                    Showing {rangeStart}–{rangeEnd} of {filteredCustomers.length}{' '}
+                    customer{filteredCustomers.length === 1 ? '' : 's'}
+                    {hasActiveFilters && ` (filtered from ${customers.length})`}
+                  </p>
+                  <label className="inventory-pagination__page-size">
+                    <span className="inventory-pagination__page-size-label">
+                      Customers per page
+                    </span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) =>
+                        handlePageSizeChange(Number(e.target.value))
+                      }
+                      className="form-select-page-size"
+                      aria-label="Customers per page"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="inventory-pagination__controls">
+                  <Button
+                    variant="pagination"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <Button
+                        key={page}
+                        variant="pagination"
+                        size="sm"
+                        active={currentPage === page}
+                        onClick={() => goToPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ),
+                  )}
+                  <Button
+                    variant="pagination"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

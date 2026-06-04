@@ -9,3 +9,7 @@
 .filter__grid {
   @apply mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
 }
+
+.filter__grid--two {
+  @apply lg:grid-cols-2;
+}
