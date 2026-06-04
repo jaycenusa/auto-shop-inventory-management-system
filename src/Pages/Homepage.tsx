@@ -1,35 +1,66 @@
+import { useMemo } from 'react'
 import AppHeader, { type AppHeaderProps } from './Header'
 import RecentActivity from '../Components/RecentActivity'
 import type { Customer } from '../Database/CustomerData'
-import Button from '../Shared/Button'
+import type { InventoryPart } from '../Database/InventoryData'
+import {
+  formatCurrency,
+  getLowStockChangeLabel,
+  getTotalMoneyMadeChangeLabel,
+  getTotalPartsChangeLabel,
+  useDashboardCalculations,
+} from '../Utils/Calculation'
 
 type HomepageProps = AppHeaderProps & {
+  parts: InventoryPart[]
   customers: Customer[]
   onViewAllCustomers?: () => void
   onViewCustomer?: (customerId: string) => void
 }
 
-const stats = [
-  { label: 'Total parts', value: '1,248', change: '+12 this week' },
-  { label: 'Low stock', value: '18', change: 'Needs attention' },
-  { label: 'Open orders', value: '34', change: '6 due today' },
-  { label: 'Monthly spend', value: '$24,580', change: 'On track' },
-]
-
 export default function Homepage({
+  parts,
   customers,
   onViewAllCustomers,
   onViewCustomer,
-  ...props
+  ...headerProps
 }: HomepageProps) {
+  const { totalParts, lowStockCount, totalMoneyMade } = useDashboardCalculations(
+    parts,
+    customers,
+  )
+
+  const stats = useMemo(
+    () => [
+      {
+        label: 'Total parts',
+        value: totalParts.toLocaleString(),
+        change: getTotalPartsChangeLabel(totalParts),
+      },
+      {
+        label: 'Low stock',
+        value: lowStockCount.toLocaleString(),
+        change: getLowStockChangeLabel(lowStockCount),
+      },
+      {
+        label: 'Total money made',
+        value: formatCurrency(totalMoneyMade),
+        change: getTotalMoneyMadeChangeLabel(customers, totalMoneyMade),
+      },
+    ],
+    [totalParts, lowStockCount, totalMoneyMade, customers],
+  )
+
   return (
     <div className="page">
-      <AppHeader {...props} />
+      <AppHeader {...headerProps} />
 
       <div className="page-header">
         <div className="page-header__inner">
           <p className="page-header__eyebrow">Dashboard</p>
-          <h1 className="page-header__title">Welcome back</h1>
+          <h1 className="page-header__title">
+            Welcome to Auto Shop Inventory System
+          </h1>
           <p className="page-header__description">
             Overview of your shop inventory, stock levels, and recent activity.
           </p>
@@ -47,27 +78,12 @@ export default function Homepage({
           ))}
         </section>
 
-        <section className="homepage__grid">
-          <div className="homepage__panel homepage__panel--wide homepage__panel--flush">
-            <RecentActivity
-              customers={customers}
-              onViewAllCustomers={onViewAllCustomers}
-              onViewCustomer={onViewCustomer}
-            />
-          </div>
-
-          <div className="homepage__panel">
-            <h2 className="homepage__panel-title">Quick actions</h2>
-            <ul className="homepage__actions-list">
-              {['Receive shipment', 'Run stock count', 'Export report'].map(
-                (action) => (
-                  <li key={action}>
-                    <Button variant="quick-action">{action}</Button>
-                  </li>
-                ),
-              )}
-            </ul>
-          </div>
+        <section className="homepage__recent">
+          <RecentActivity
+            customers={customers}
+            onViewAllCustomers={onViewAllCustomers}
+            onViewCustomer={onViewCustomer}
+          />
         </section>
       </main>
     </div>
