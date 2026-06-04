@@ -5,7 +5,7 @@ A full-width React application for managing auto shop parts inventory—browse s
 ## Features
 
 ### Dashboard
-- Shop overview with summary stats and quick-action placeholders
+- Shop overview with summary stats and recent customer activity
 - Branded navigation header with logo and main menu
 
 ### Inventory catalog
@@ -79,7 +79,7 @@ Pushes to **`main`** (or **`master`**) run [semantic-release](https://semantic-r
 | ------- | ------------ | ---------------------------- |
 | `feat`  | minor        | `feat: add order cart`       |
 | `fix`   | patch        | `fix: inventory search sync` |
-| `chore` | patch        | `chore: update webpack`      |
+| `chore` | patch        | `chore: update dependencies` |
 
 A releasable push updates `package.json`, `CHANGELOG.md`, creates a Git tag (e.g. `v0.2.0`), and opens a GitHub Release.
 
