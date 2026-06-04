@@ -11,7 +11,6 @@ export type ButtonVariant =
   | 'nav'
   | 'nav-dropdown'
   | 'pagination'
-  | 'quick-action'
   | 'brand'
 
 export type ButtonSize = 'sm' | 'md' | 'lg'
@@ -67,9 +66,6 @@ function buildButtonClass(
       break
     case 'pagination':
       classes.push(active ? 'btn--pagination-active' : 'btn--pagination')
-      break
-    case 'quick-action':
-      classes.push('btn--quick-action')
       break
     case 'brand':
       classes.push('btn--brand')

@@ -74,10 +74,6 @@
   @apply min-w-9 rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-slate-900;
 }
 
-.btn--quick-action {
-  @apply w-full rounded-lg border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-amber-300 hover:bg-amber-50;
-}
-
 .btn--brand {
   @apply flex items-center gap-3 transition-opacity hover:opacity-90;
 }
