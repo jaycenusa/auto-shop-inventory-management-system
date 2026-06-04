@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { useForm } from 'react-hook-form'
 import AppHeader, { type AppHeaderProps } from './Header'
+import CustomerVehicleForm from '../Components/CustomerVehicleForm'
+import VehicleVinCell from '../Components/VehicleVinCell'
+import { getCarBrands, getCarYearOptions } from '../Database/CarCatalog'
 import {
   createEmptyCustomer,
   createEmptyTransaction,
+  createEmptyVehicle,
   type Customer,
   type CustomerTransaction,
+  type CustomerVehicle,
 } from '../Database/CustomerData'
-import Button, { PlusIcon } from '../Shared/Button'
+import Button, { EditIcon, PlusIcon } from '../Shared/Button'
+import TablePagination from '../Shared/TablePagination'
 import {
-  customerCarBrandRules,
-  customerCarModelRules,
   customerFullNameRules,
   customerPhoneRules,
-  customerVinRules,
 } from '../Utils/CustomerValidation'
+import { usePagination } from '../Utils/usePagination'
 
 type CustomerInfoProps = AppHeaderProps & {
   customerId: string | null
@@ -27,9 +31,6 @@ type CustomerInfoProps = AppHeaderProps & {
 type CustomerFormValues = {
   fullName: string
   phone: string
-  carBrand: string
-  carModel: string
-  vin: string
 }
 
 function fieldClass(hasError: boolean) {
@@ -62,9 +63,17 @@ export default function CustomerInfo({
 
   const isNew = !existing
 
+  const [vehicles, setVehicles] = useState<CustomerVehicle[]>(
+    existing?.vehicles ?? [],
+  )
   const [transactions, setTransactions] = useState<CustomerTransaction[]>(
     existing?.transactions ?? [],
   )
+  const [vehicleDraft, setVehicleDraft] = useState<CustomerVehicle | null>(null)
+  const [vehicleFormError, setVehicleFormError] = useState<string | null>(null)
+
+  const carBrands = useMemo(() => getCarBrands(), [])
+  const carYearOptions = useMemo(() => getCarYearOptions(), [])
 
   const {
     register,
@@ -75,9 +84,6 @@ export default function CustomerInfo({
     defaultValues: {
       fullName: existing?.fullName ?? '',
       phone: existing?.phone ?? '',
-      carBrand: existing?.carBrand ?? '',
-      carModel: existing?.carModel ?? '',
-      vin: existing?.vin ?? '',
     },
     mode: 'onSubmit',
   })
@@ -86,21 +92,57 @@ export default function CustomerInfo({
     reset({
       fullName: existing?.fullName ?? '',
       phone: existing?.phone ?? '',
-      carBrand: existing?.carBrand ?? '',
-      carModel: existing?.carModel ?? '',
-      vin: existing?.vin ?? '',
     })
+    setVehicles(existing?.vehicles ?? [])
     setTransactions(existing?.transactions ?? [])
+    setVehicleDraft(null)
+    setVehicleFormError(null)
   }, [customerId, existing, reset])
+
+  const vehiclePagination = usePagination(vehicles)
+  const transactionPagination = usePagination(transactions)
+
+  const isEditingVehicle =
+    vehicleDraft !== null &&
+    vehicles.some((vehicle) => vehicle.id === vehicleDraft.id)
+
+  const openAddVehicle = () => {
+    setVehicleFormError(null)
+    setVehicleDraft(createEmptyVehicle())
+  }
+
+  const openEditVehicle = (vehicle: CustomerVehicle) => {
+    setVehicleFormError(null)
+    setVehicleDraft({ ...vehicle })
+  }
+
+  const cancelVehicleForm = () => {
+    setVehicleDraft(null)
+    setVehicleFormError(null)
+  }
+
+  const saveVehicleDraft = (record: CustomerVehicle) => {
+    setVehicles((prev) => {
+      const index = prev.findIndex((vehicle) => vehicle.id === record.id)
+      if (index === -1) return [...prev, record]
+      return prev.map((vehicle) =>
+        vehicle.id === record.id ? record : vehicle,
+      )
+    })
+    cancelVehicleForm()
+  }
+
+  const removeVehicle = (id: string) => {
+    setVehicles((prev) => prev.filter((vehicle) => vehicle.id !== id))
+    if (vehicleDraft?.id === id) cancelVehicleForm()
+  }
 
   const onSave = handleSubmit((data) => {
     const record: Customer = {
       id: existing?.id ?? createEmptyCustomer().id,
       fullName: data.fullName.trim(),
       phone: data.phone.trim(),
-      carBrand: data.carBrand.trim(),
-      carModel: data.carModel.trim(),
-      vin: data.vin.trim().toUpperCase(),
+      vehicles,
       transactions,
     }
 
@@ -124,6 +166,9 @@ export default function CustomerInfo({
         if (field === 'cost' || field === 'downPayment') {
           const parsed = parseFloat(value)
           return { ...txn, [field]: Number.isNaN(parsed) ? 0 : parsed }
+        }
+        if (field === 'vin') {
+          return { ...txn, vin: value.toUpperCase() }
         }
         return { ...txn, [field]: value }
       }),
@@ -152,7 +197,7 @@ export default function CustomerInfo({
           </h1>
           <p className="page-header__description">
             {isNew
-              ? 'Enter customer and vehicle details, then add service transactions.'
+              ? 'Enter customer details, register vehicles, and record service transactions.'
               : `Updating ${existing?.fullName ?? 'customer'} records.`}
           </p>
         </div>
@@ -177,7 +222,7 @@ export default function CustomerInfo({
                 <FieldError message={errors.fullName?.message} />
               </label>
 
-              <label className="form-field">
+              <label className="form-field customer-info-form__field--wide">
                 <RequiredLabel>Phone number</RequiredLabel>
                 <input
                   type="tel"
@@ -187,42 +232,103 @@ export default function CustomerInfo({
                 />
                 <FieldError message={errors.phone?.message} />
               </label>
+            </div>
+          </form>
 
-              <label className="form-field">
-                <RequiredLabel>Car brand</RequiredLabel>
-                <input
-                  type="text"
-                  {...register('carBrand', customerCarBrandRules)}
-                  className={fieldClass(Boolean(errors.carBrand))}
-                  placeholder="Toyota"
-                />
-                <FieldError message={errors.carBrand?.message} />
-              </label>
-
-              <label className="form-field">
-                <RequiredLabel>Car model</RequiredLabel>
-                <input
-                  type="text"
-                  {...register('carModel', customerCarModelRules)}
-                  className={fieldClass(Boolean(errors.carModel))}
-                  placeholder="Camry"
-                />
-                <FieldError message={errors.carModel?.message} />
-              </label>
-
-              <label className="form-field customer-info-form__field--wide">
-                <RequiredLabel>VIN number</RequiredLabel>
-                <input
-                  type="text"
-                  {...register('vin', customerVinRules)}
-                  className={fieldClass(Boolean(errors.vin))}
-                  placeholder="17-character VIN"
-                />
-                <FieldError message={errors.vin?.message} />
-              </label>
+          <div className="px-6 pb-6">
+            <div className="customer-transactions__header">
+              <h3 className="customer-transactions__title">Vehicles</h3>
+              <Button
+                type="button"
+                variant="accent"
+                icon={<PlusIcon />}
+                onClick={openAddVehicle}
+                disabled={vehicleDraft !== null}
+              >
+                Add vehicle
+              </Button>
             </div>
 
-          </form>
+            {vehicleDraft && (
+              <CustomerVehicleForm
+                draft={vehicleDraft}
+                isEditing={isEditingVehicle}
+                carBrands={carBrands}
+                carYearOptions={carYearOptions}
+                onSave={saveVehicleDraft}
+                onCancel={cancelVehicleForm}
+                errorMessage={vehicleFormError}
+              />
+            )}
+
+            {vehicles.length === 0 ? (
+              <p className="customer-transactions__empty">
+                No vehicles yet. Add a vehicle to link it to this customer.
+              </p>
+            ) : (
+              <>
+                <div className="inventory-table-wrap">
+                  <table className="inventory-table inventory-table--wide">
+                    <thead>
+                      <tr className="inventory-table__head-row">
+                        <th className="table-cell--header">Car brand</th>
+                        <th className="table-cell--header">Car model</th>
+                        <th className="table-cell--header">Year</th>
+                        <th className="table-cell--header">VIN number</th>
+                        <th className="table-cell--header">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="inventory-table__body">
+                      {vehiclePagination.paginatedItems.map((vehicle) => (
+                        <tr key={vehicle.id}>
+                          <td className="table-cell">{vehicle.carBrand}</td>
+                          <td className="table-cell">{vehicle.carModel}</td>
+                          <td className="table-cell">
+                            {vehicle.carYear > 0 ? vehicle.carYear : '—'}
+                          </td>
+                          <td className="table-cell">
+                            <VehicleVinCell vin={vehicle.vin} />
+                          </td>
+                          <td className="table-cell">
+                            <div className="customers-table__actions">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                icon={<EditIcon />}
+                                onClick={() => openEditVehicle(vehicle)}
+                                disabled={vehicleDraft !== null}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="danger"
+                                onClick={() => removeVehicle(vehicle.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <TablePagination
+                  totalItems={vehicles.length}
+                  itemLabel="vehicles"
+                  rangeStart={vehiclePagination.rangeStart}
+                  rangeEnd={vehiclePagination.rangeEnd}
+                  currentPage={vehiclePagination.currentPage}
+                  totalPages={vehiclePagination.totalPages}
+                  pageSize={vehiclePagination.pageSize}
+                  onPageChange={vehiclePagination.goToPage}
+                  onPageSizeChange={vehiclePagination.handlePageSizeChange}
+                  pageSizeLabel="Vehicles per page"
+                />
+              </>
+            )}
+          </div>
         </section>
 
         <section className="section-card mt-6">
@@ -246,87 +352,114 @@ export default function CustomerInfo({
                 No transactions yet. Use Add transaction to record a service.
               </p>
             ) : (
-              <div className="inventory-table-wrap">
-                <table className="inventory-table inventory-table--wide">
-                  <thead>
-                    <tr className="inventory-table__head-row">
-                      <th className="table-cell--header">Date</th>
-                      <th className="table-cell--header">Description</th>
-                      <th className="table-cell--header">Cost</th>
-                      <th className="table-cell--header">Down payment</th>
-                      <th className="table-cell--header">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="inventory-table__body">
-                    {transactions.map((txn) => (
-                      <tr key={txn.id}>
-                        <td className="table-cell">
-                          <input
-                            type="date"
-                            value={txn.date}
-                            onChange={(e) =>
-                              updateTransaction(txn.id, 'date', e.target.value)
-                            }
-                            className="form-cell-input"
-                          />
-                        </td>
-                        <td className="table-cell">
-                          <input
-                            type="text"
-                            value={txn.description}
-                            onChange={(e) =>
-                              updateTransaction(
-                                txn.id,
-                                'description',
-                                e.target.value,
-                              )
-                            }
-                            className="form-cell-input"
-                            placeholder="Service description"
-                          />
-                        </td>
-                        <td className="table-cell">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={txn.cost}
-                            onChange={(e) =>
-                              updateTransaction(txn.id, 'cost', e.target.value)
-                            }
-                            className="form-cell-input"
-                          />
-                        </td>
-                        <td className="table-cell">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={txn.downPayment}
-                            onChange={(e) =>
-                              updateTransaction(
-                                txn.id,
-                                'downPayment',
-                                e.target.value,
-                              )
-                            }
-                            className="form-cell-input"
-                          />
-                        </td>
-                        <td className="table-cell">
-                          <Button
-                            type="button"
-                            variant="danger"
-                            onClick={() => removeTransaction(txn.id)}
-                          >
-                            Remove
-                          </Button>
-                        </td>
+              <>
+                <div className="inventory-table-wrap">
+                  <table className="inventory-table inventory-table--wide">
+                    <thead>
+                      <tr className="inventory-table__head-row">
+                        <th className="table-cell--header">Date</th>
+                        <th className="table-cell--header">Description</th>
+                        <th className="table-cell--header">VIN number</th>
+                        <th className="table-cell--header">Cost</th>
+                        <th className="table-cell--header">Down payment</th>
+                        <th className="table-cell--header">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="inventory-table__body">
+                      {transactionPagination.paginatedItems.map((txn) => (
+                        <tr key={txn.id}>
+                          <td className="table-cell">
+                            <input
+                              type="date"
+                              value={txn.date}
+                              onChange={(e) =>
+                                updateTransaction(txn.id, 'date', e.target.value)
+                              }
+                              className="form-cell-input"
+                            />
+                          </td>
+                          <td className="table-cell">
+                            <input
+                              type="text"
+                              value={txn.description}
+                              onChange={(e) =>
+                                updateTransaction(
+                                  txn.id,
+                                  'description',
+                                  e.target.value,
+                                )
+                              }
+                              className="form-cell-input"
+                              placeholder="Service description"
+                            />
+                          </td>
+                          <td className="table-cell">
+                            <input
+                              type="text"
+                              value={txn.vin}
+                              onChange={(e) =>
+                                updateTransaction(txn.id, 'vin', e.target.value)
+                              }
+                              className="form-cell-input"
+                              placeholder="VIN"
+                              maxLength={17}
+                            />
+                          </td>
+                          <td className="table-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={txn.cost}
+                              onChange={(e) =>
+                                updateTransaction(txn.id, 'cost', e.target.value)
+                              }
+                              className="form-cell-input"
+                            />
+                          </td>
+                          <td className="table-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={txn.downPayment}
+                              onChange={(e) =>
+                                updateTransaction(
+                                  txn.id,
+                                  'downPayment',
+                                  e.target.value,
+                                )
+                              }
+                              className="form-cell-input"
+                            />
+                          </td>
+                          <td className="table-cell">
+                            <Button
+                              type="button"
+                              variant="danger"
+                              onClick={() => removeTransaction(txn.id)}
+                            >
+                              Remove
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <TablePagination
+                  totalItems={transactions.length}
+                  itemLabel="transactions"
+                  rangeStart={transactionPagination.rangeStart}
+                  rangeEnd={transactionPagination.rangeEnd}
+                  currentPage={transactionPagination.currentPage}
+                  totalPages={transactionPagination.totalPages}
+                  pageSize={transactionPagination.pageSize}
+                  onPageChange={transactionPagination.goToPage}
+                  onPageSizeChange={transactionPagination.handlePageSizeChange}
+                  pageSizeLabel="Transactions per page"
+                />
+              </>
             )}
           </div>
         </section>

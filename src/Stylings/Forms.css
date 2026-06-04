@@ -24,6 +24,10 @@
   @apply border-red-500 focus:border-red-500 focus:ring-red-500;
 }
 
+.form-input:disabled {
+  @apply cursor-not-allowed bg-slate-100 text-slate-500;
+}
+
 .form-error {
   @apply mt-1 text-sm text-red-600;
 }

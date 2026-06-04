@@ -21,3 +21,47 @@
 .customer-transactions__empty {
   @apply rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500;
 }
+
+.customer-vehicle-form {
+  @apply mb-6 rounded-lg border border-amber-200 bg-amber-50/50 p-4;
+}
+
+.customer-vehicle-form__title {
+  @apply text-sm font-semibold text-slate-900;
+}
+
+.customer-vehicle-form__error {
+  @apply mt-2;
+}
+
+.customer-vehicle-form__grid {
+  @apply mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.customer-vehicle-form__field--wide {
+  @apply sm:col-span-2 lg:col-span-3;
+}
+
+.customer-vehicle-form__vin {
+  @apply sm:col-span-2;
+}
+
+.customer-vehicle-form__actions {
+  @apply mt-4 flex flex-wrap gap-3;
+}
+
+.vehicle-vin-cell {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.vehicle-vin-cell__value {
+  @apply break-all font-mono text-xs text-slate-800 sm:text-sm;
+}
+
+.vehicle-vin-cell__empty {
+  @apply text-slate-500;
+}
+
+.vehicle-vin-cell__copy {
+  @apply shrink-0 px-0 py-0;
+}
