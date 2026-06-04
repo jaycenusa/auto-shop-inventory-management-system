@@ -7,15 +7,15 @@
 }
 
 .navbar__center {
-  @apply flex min-w-0 flex-1 flex-col items-center justify-center gap-3 sm:flex-row;
+  @apply flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-start;
 }
 
 .navbar__links {
-  @apply flex flex-wrap items-center justify-center gap-1;
+  @apply flex flex-wrap items-center justify-start gap-1;
 }
 
 .navbar-search {
-  @apply relative w-full max-w-xs sm:w-64 lg:w-72;
+  @apply relative w-full max-w-xs sm:ms-auto sm:w-64 lg:w-72;
 }
 
 .navbar-search__icon-wrap {
