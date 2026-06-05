@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 dotenv.config()
 
 const root = dirname(fileURLToPath(import.meta.url))
-const distDir = join(root, 'dist')
+const distDir = join(root, 'build')
 const cssOutFile = join(distDir, 'main.css')
 const command = process.argv[2] ?? 'build'
 const isProd = command === 'build'
@@ -51,11 +51,26 @@ function copyPublicAssets() {
   cpSync(publicDir, distDir, { recursive: true })
 }
 
+function getPublicPath() {
+  if (!isProd) return '/'
+
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    const homepage = pkg.homepage
+    if (!homepage) return '/'
+    const path = new URL(homepage).pathname
+    return path.endsWith('/') ? path : `${path}/`
+  } catch {
+    return '/'
+  }
+}
+
 function writeIndexHtml(jsPath) {
+  const publicPath = getPublicPath()
   const template = readFileSync(join(root, 'index.html'), 'utf8')
   const tags = [
-    '<link rel="stylesheet" href="/main.css">',
-    `<script type="module" src="/${jsPath}"></script>`,
+    `<link rel="stylesheet" href="${publicPath}main.css">`,
+    `<script type="module" src="${publicPath}${jsPath}"></script>`,
   ]
 
   const html = template.replace(
@@ -126,6 +141,7 @@ function createJsBuildOptions() {
     entryPoints: [join(root, 'src/Main.tsx')],
     bundle: true,
     outdir: distDir,
+    publicPath: getPublicPath(),
     entryNames: isProd ? '[name]-[hash]' : '[name]',
     assetNames: 'assets/[name]-[hash]',
     format: 'esm',
@@ -256,7 +272,7 @@ try {
     await startDev()
   } else {
     await buildOnce()
-    console.info('Build complete → dist/')
+    console.info('Build complete → build/')
   }
 } catch (error) {
   console.error(error)
