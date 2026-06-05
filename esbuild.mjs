@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 dotenv.config()
 
 const root = dirname(fileURLToPath(import.meta.url))
-const distDir = join(root, 'build')
+const distDir = join(root, 'dist')
 const cssOutFile = join(distDir, 'main.css')
 const command = process.argv[2] ?? 'build'
 const isProd = command === 'build'
@@ -272,7 +272,7 @@ try {
     await startDev()
   } else {
     await buildOnce()
-    console.info('Build complete → build/')
+    console.info('Build complete → dist/')
   }
 } catch (error) {
   console.error(error)

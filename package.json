@@ -9,9 +9,9 @@
     "server": "node server/Index.cjs",
     "build": "tsc -b && node esbuild.mjs build",
     "lint": "eslint .",
-    "prod": "npm run build && npx serve build -s -l 3000",
+    "prod": "npm run build && npx serve dist -s -l 3000",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "gh-pages -d dist",
     "release": "semantic-release"
   },
   "dependencies": {
