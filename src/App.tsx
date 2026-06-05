@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { OrderCartProvider } from './Context/OrderCartContext'
-import { AuthProvider } from './OAuth/AuthContext'
 import { ImageZoomProvider } from './Utils/ImageZoom'
+import { usePersistedState } from './Utils/usePersistedState'
 import Homepage from './Pages/Homepage'
 import InventoryPage from './Pages/InventoryPage'
 import CustomersPage from './Pages/CustomersPage'
@@ -14,12 +14,11 @@ import type { InventoryFilterState } from './Shared/Filter'
 import {
   inventoryParts as initialParts,
   type InventoryCategory,
-  type InventoryPart,
 } from './Database/InventoryData'
-import {
-  initialCustomers,
-  type Customer,
-} from './Database/CustomerData'
+import { initialCustomers } from './Database/CustomerData'
+
+const PARTS_STORAGE_KEY = 'auto-shop-inventory:parts'
+const CUSTOMERS_STORAGE_KEY = 'auto-shop-inventory:customers'
 
 function App() {
   const [page, setPage] = useState<AppPage>('dashboard')
@@ -27,8 +26,11 @@ function App() {
     useState<InventoryCategory | null>(null)
   const [inventoryFilters, setInventoryFilters] =
     useState<InventoryFilterState>(emptyInventoryFilters)
-  const [parts, setParts] = useState<InventoryPart[]>(initialParts)
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
+  const [parts, setParts] = usePersistedState(PARTS_STORAGE_KEY, initialParts)
+  const [customers, setCustomers] = usePersistedState(
+    CUSTOMERS_STORAGE_KEY,
+    initialCustomers,
+  )
   const [customerEditId, setCustomerEditId] = useState<string | null>(null)
 
   const handleNavigate = (nextPage: AppPage) => {
@@ -110,11 +112,9 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-      <OrderCartProvider>
-        <ImageZoomProvider>{content}</ImageZoomProvider>
-      </OrderCartProvider>
-    </AuthProvider>
+    <OrderCartProvider>
+      <ImageZoomProvider>{content}</ImageZoomProvider>
+    </OrderCartProvider>
   )
 }
 

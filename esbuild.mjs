@@ -21,25 +21,6 @@ const cssOutFile = join(distDir, 'main.css')
 const command = process.argv[2] ?? 'build'
 const isProd = command === 'build'
 
-function loadDefine() {
-  const redirectSignIn =
-    process.env.AWS_REDIRECT_SIGN_IN ?? 'http://localhost:3000/'
-  const redirectSignOut =
-    process.env.AWS_REDIRECT_SIGN_OUT ?? redirectSignIn
-
-  return {
-    GOOGLE_CLIENT_ID: JSON.stringify(process.env.GOOGLE_CLIENT_ID ?? ''),
-    AWS_REGION: JSON.stringify(process.env.AWS_REGION ?? ''),
-    AWS_USER_POOL_ID: JSON.stringify(process.env.AWS_USER_POOL_ID ?? ''),
-    AWS_USER_POOL_CLIENT_ID: JSON.stringify(
-      process.env.AWS_USER_POOL_CLIENT_ID ?? '',
-    ),
-    AWS_COGNITO_DOMAIN: JSON.stringify(process.env.AWS_COGNITO_DOMAIN ?? ''),
-    AWS_REDIRECT_SIGN_IN: JSON.stringify(redirectSignIn),
-    AWS_REDIRECT_SIGN_OUT: JSON.stringify(redirectSignOut),
-  }
-}
-
 function cleanDist() {
   rmSync(distDir, { recursive: true, force: true })
   mkdirSync(distDir, { recursive: true })
@@ -150,7 +131,6 @@ function createJsBuildOptions() {
     sourcemap: true,
     minify: isProd,
     jsx: 'automatic',
-    define: loadDefine(),
     metafile: true,
     logLevel: 'info',
   }
