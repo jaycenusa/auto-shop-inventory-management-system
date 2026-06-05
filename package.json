@@ -10,7 +10,7 @@
     "build": "tsc -b && node esbuild.mjs build",
     "lint": "eslint .",
     "prod": "npm run build && npx serve dist -s -l 3000",
-    "predeploy": "npm run build",
+    "predeploy": "GITHUB_PAGES=true npm run build",
     "deploy": "gh-pages -d dist",
     "release": "semantic-release"
   },

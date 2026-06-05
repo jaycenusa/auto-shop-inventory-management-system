@@ -52,7 +52,7 @@ function copyPublicAssets() {
 }
 
 function getPublicPath() {
-  if (!isProd) return '/'
+  if (!isProd || process.env.GITHUB_PAGES !== 'true') return '/'
 
   try {
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
