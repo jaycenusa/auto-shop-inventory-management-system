@@ -40,43 +40,7 @@ export function getPrimaryVehicle(customer: Customer): CustomerVehicle | undefin
   return customer.vehicles[0]
 }
 
-export const initialCustomers: Customer[] = [
-  {
-    id: 'cust-1',
-    fullName: 'Jordan Martinez',
-    phone: '(555) 201-8842',
-    gender: 'F',
-    address: '742 Evergreen Terrace, Springfield, IL 62704',
-    country: CUSTOMER_COUNTRY,
-    vehicles: [
-      {
-        id: 'veh-1',
-        carBrand: 'Toyota',
-        carModel: 'Camry',
-        carYear: 2019,
-        vin: '4T1BF1FK5HU123456',
-      },
-    ],
-    transactions: [
-      {
-        id: 'txn-1',
-        date: '2026-03-12',
-        description: 'Brake pad replacement',
-        cost: 420,
-        downPayment: 150,
-        vin: '4T1BF1FK5HU123456',
-      },
-      {
-        id: 'txn-2',
-        date: '2026-04-02',
-        description: 'Oil change and filter',
-        cost: 89.5,
-        downPayment: 89.5,
-        vin: '4T1BF1FK5HU123456',
-      },
-    ],
-  },
-]
+export const initialCustomers: Customer[] = []
 
 export function createEmptyCustomer(): Customer {
   return {
