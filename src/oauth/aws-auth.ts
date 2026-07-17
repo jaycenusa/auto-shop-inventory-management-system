@@ -23,7 +23,7 @@ function readEnv(name: string): string {
   return typeof name === 'string' ? name.trim() : ''
 }
 
-export function getaws-authConfig(): aws-authConfig | null {
+export function getAwsAuthConfig(): AwsAuthConfig | null {
   const region = readEnv(AWS_REGION)
   const userPoolId = readEnv(AWS_USER_POOL_ID)
   const userPoolClientId = readEnv(AWS_USER_POOL_CLIENT_ID)
@@ -45,12 +45,12 @@ export function getaws-authConfig(): aws-authConfig | null {
   }
 }
 
-export function isaws-authConfigured(): boolean {
-  return getaws-authConfig() !== null
+export function isAwsAuthConfigured(): boolean {
+  return getAwsAuthConfig() !== null
 }
 
-export function configureaws-auth(): boolean {
-  const config = getaws-authConfig()
+export function configureAwsAuth(): boolean {
+  const config = getAwsAuthConfig()
   if (!config || amplifyConfigured) {
     return Boolean(config)
   }
@@ -106,7 +106,7 @@ async function mapAmplifyUserToAuthUser(): Promise<AuthUser> {
 }
 
 export async function getAwsSignedInUser(): Promise<AuthUser | null> {
-  if (!configureaws-auth()) return null
+  if (!configureAwsAuth()) return null
 
   try {
     await getCurrentUser()
@@ -117,7 +117,7 @@ export async function getAwsSignedInUser(): Promise<AuthUser | null> {
 }
 
 export async function signInWithAwsHostedUi(): Promise<void> {
-  if (!configureaws-auth()) {
+  if (!configureAwsAuth()) {
     throw new Error(
       'AWS Cognito is not configured. Set AWS_REGION, AWS_USER_POOL_ID, AWS_USER_POOL_CLIENT_ID, and AWS_COGNITO_DOMAIN in your .env file.',
     )
@@ -130,7 +130,7 @@ export async function signInWithAwsCredentials(
   username: string,
   password: string,
 ): Promise<AuthUser> {
-  if (!configureaws-auth()) {
+  if (!configureAwsAuth()) {
     throw new Error('AWS Cognito is not configured.')
   }
 

@@ -11,6 +11,10 @@ const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin'
 /** @param {{ mode?: string }} argv */
 module.exports = (env, argv) => {
   const isDev = argv.mode === 'development'
+  // Project Pages base path; override with PUBLIC_PATH=/ for custom domains / root hosting
+  const publicPath =
+    process.env.PUBLIC_PATH ??
+    (isDev ? '/' : '/auto-shop-inventory-management-system/')
 
   return {
     entry: './src/main.tsx',
@@ -19,7 +23,7 @@ module.exports = (env, argv) => {
       filename: isDev ? '[name].js' : '[name].[contenthash].js',
       assetModuleFilename: 'assets/[hash][ext][query]',
       clean: true,
-      publicPath: '/',
+      publicPath,
     },
     resolve: {
       extensions: ['.tsx', '.ts', '.jsx', '.js'],

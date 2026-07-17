@@ -46,7 +46,7 @@ function getAddPartDefaults(
     quantity: '',
     imageUrl: '',
     category: inventoryCategory ?? 'Car Parts',
-    availabilitystatus: 'In Stock',
+    availabilityStatus: 'In Stock',
   }
 }
 
@@ -86,7 +86,7 @@ export default function AddCarPart({
     mode: 'onSubmit',
   })
 
-  const carPartValue = watch('carpart')
+  const carPartValue = watch('carPart')
 
   const onAddToPreview = handleSubmit((data) => {
     const part: InventoryPart = {
@@ -148,7 +148,7 @@ export default function AddCarPart({
                 <RequiredLabel>Car part</RequiredLabel>
                 <input
                   type="text"
-                  {...register('carpart', carPartRules)}
+                  {...register('carPart', carPartRules)}
                   className={fieldClass(Boolean(errors.carPart))}
                   placeholder="e.g. Brake Rotor"
                 />
@@ -207,7 +207,7 @@ export default function AddCarPart({
                   Availability status
                 </span>
                 <select
-                  {...register('availabilitystatus')}
+                  {...register('availabilityStatus')}
                   className="form-input"
                 >
                   {availabilityOptions.map((status) => (

@@ -6,7 +6,7 @@ const fmtCurrency = (n: number) => `$${n.toLocaleString("en-US", { minimumFracti
 
 export default function CustomerPage({ customers }: { customers: Customer[] }) {
   const [search, setSearch] = useState("");
-  const [filterStatus, setfilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
 
   const filtered = customers.filter(c => {
     const q = search.toLowerCase();
@@ -58,7 +58,7 @@ export default function CustomerPage({ customers }: { customers: Customer[] }) {
           {(["all", "active", "inactive"] as const).map(s => (
             <button
               key={s}
-              onClick={() => setfilterStatus(s)}
+              onClick={() => setFilterStatus(s)}
               className={`px-4 py-2 text-[11px] font-mono uppercase tracking-widest transition-colors ${filterStatus === s ? "bg-foreground text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
             >
               {s}
