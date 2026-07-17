@@ -1,3 +1,21 @@
+## [1.1.1](https://github.com/jaycenusa/auto-shop-inventory-management-system/compare/v1.1.0...v1.1.1) (2026-05-29)
+
+### Bug Fixes
+
+* removed react-refresh/babel from config ([d98fa0f](https://github.com/jaycenusa/auto-shop-inventory-management-system/commit/d98fa0f467c0fe0fbd3839afa1a1c77c81b44318))
+
+## [1.1.0](https://github.com/jaycenusa/auto-shop-inventory-management-system/compare/v1.0.1...v1.1.0) (2026-05-29)
+
+### Features
+
+* add backend codes ([b168b7b](https://github.com/jaycenusa/auto-shop-inventory-management-system/commit/b168b7b53dac74d02e1d3f217d9c23ef6a695632))
+
+## [1.0.1](https://github.com/jaycenusa/auto-shop-inventory-management-system/compare/v1.0.0...v1.0.1) (2026-05-29)
+
+### Bug Fixes
+
+* provide change to fix build ([7e8cc6f](https://github.com/jaycenusa/auto-shop-inventory-management-system/commit/7e8cc6fdf447cd4b3cc295ffa3e03a6a3ea54221))
+
 ## 1.0.0 (2026-05-29)
 
 ### Features

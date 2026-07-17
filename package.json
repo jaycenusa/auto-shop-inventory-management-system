@@ -1,14 +1,14 @@
 {
   "name": "auto-shop-inventory-management-system",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "dev": "webpack serve --mode development",
     "server": "node server/Index.cjs",
     "build": "tsc -b && webpack --mode production",
     "lint": "eslint .",
-    "preview": "webpack serve --mode production",
+    "prod": "webpack serve --mode production",
     "release": "semantic-release"
   },
   "dependencies": {
