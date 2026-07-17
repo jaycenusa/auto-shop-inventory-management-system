@@ -1,5 +1,8 @@
 name: Release
 
+# CodeQL is GitHub default setup (not a repo workflow), so it cannot use `needs:`.
+# Avoid workflow_run + checkout of head_sha (CodeQL: untrusted checkout in privileged context).
+# Instead: on push to main, wait for CodeQL checks on this commit, then release + deploy.
 on:
   push:
     branches:
@@ -12,11 +15,71 @@ permissions:
   pull-requests: write
   pages: write
   id-token: write
+  actions: read
+  checks: read
 
 jobs:
+  wait-for-codeql:
+    name: Wait for CodeQL
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait until CodeQL checks succeed for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHA='${{ github.sha }}'
+          REPO='${{ github.repository }}'
+          echo "Waiting for CodeQL check runs on ${SHA}"
+
+          for attempt in $(seq 1 90); do
+            payload="$(gh api "repos/${REPO}/commits/${SHA}/check-runs?per_page=100")"
+            codeql="$(
+              printf '%s' "${payload}" | jq '[.check_runs[] | select(
+                .name == "CodeQL" or
+                (.name | startswith("Analyze (")) or
+                (.name | test("Code scanning"; "i"))
+              )]'
+            )"
+            count="$(printf '%s' "${codeql}" | jq 'length')"
+
+            if [[ "${count}" -eq 0 ]]; then
+              echo "[${attempt}/90] CodeQL checks not reported yet"
+              sleep 20
+              continue
+            fi
+
+            printf '%s' "${codeql}" | jq -r '.[] | "\(.name): status=\(.status) conclusion=\(.conclusion // "null")"'
+
+            incomplete="$(printf '%s' "${codeql}" | jq '[.[] | select(.status != "completed")] | length')"
+            if [[ "${incomplete}" -gt 0 ]]; then
+              echo "[${attempt}/90] CodeQL still running"
+              sleep 20
+              continue
+            fi
+
+            failed="$(printf '%s' "${codeql}" | jq '[.[] | select(
+              .conclusion != "success" and
+              .conclusion != "neutral" and
+              .conclusion != "skipped"
+            )] | length')"
+            if [[ "${failed}" -gt 0 ]]; then
+              echo "CodeQL failed for ${SHA}"
+              printf '%s' "${codeql}" | jq .
+              exit 1
+            fi
+
+            echo "CodeQL succeeded for ${SHA}"
+            exit 0
+          done
+
+          echo "Timed out waiting for CodeQL on ${SHA}"
+          exit 1
+
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    needs: wait-for-codeql
     steps:
       - name: Checkout
         uses: actions/checkout@v4
