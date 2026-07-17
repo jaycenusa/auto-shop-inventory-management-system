@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
   const isDev = argv.mode === 'development'
 
   return {
-    entry: './src/Main.tsx',
+    entry: './src/main.tsx',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isDev ? '[name].js' : '[name].[contenthash].js',
@@ -30,6 +30,7 @@ module.exports = (env, argv) => {
       hot: true,
       port: 3000,
       open: true,
+      allowedHosts: 'all',
       proxy: [
         {
           context: ['/api'],
