@@ -68,7 +68,7 @@ export default function InventoryPage({
     onInventoryFiltersChange({
       carPart: '',
       brand: 'All',
-      availabilitystatus: 'All',
+      availabilityStatus: 'All',
     })
     setCurrentPage(1)
   }

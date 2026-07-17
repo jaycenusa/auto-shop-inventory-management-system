@@ -18,7 +18,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const googleConfigured = Boolean(getGoogleClientId())
-  const awsConfigured = isaws-authConfigured()
+  const awsConfigured = isAwsAuthConfigured()
 
   useEffect(() => {
     if (!open) return
@@ -44,10 +44,10 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
       return
     }
 
-    const container = googlebuttonRef.current
+    const container = googleButtonRef.current
     if (!container || !googleConfigured) return
 
-    void renderGoogleSignInbutton(
+    void renderGoogleSignInButton(
       container,
       (user) => {
         loginWithGoogle(user)

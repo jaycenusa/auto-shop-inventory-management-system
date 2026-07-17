@@ -14,42 +14,42 @@ export type InventoryFilterState = {
 export const emptyInventoryFilters: InventoryFilterState = {
   carPart: '',
   brand: 'All',
-  availabilitystatus: 'All',
+  availabilityStatus: 'All',
 }
 
-export function hasActiveInventoryfilters(filters: InventoryfilterState): boolean {
+export function hasActiveInventoryFilters(filters: InventoryFilterState): boolean {
   return (
-    filters.carpart !== '' ||
+    filters.carPart !== '' ||
     filters.brand !== 'All' ||
-    filters.availabilitystatus !== 'All'
+    filters.availabilityStatus !== 'All'
   )
 }
 
-export function getBrandOptionsFromparts(
+export function getBrandOptionsFromParts(
   parts: { brand: string }[],
 ): string[] {
   return [...new Set(parts.map((part) => part.brand))].sort()
 }
 
 export function useBrandOptions(parts: { brand: string }[]) {
-  return useMemo(() => getBrandOptionsFromparts(parts), [parts])
+  return useMemo(() => getBrandOptionsFromParts(parts), [parts])
 }
 
-export function filterInventoryparts<
+export function filterInventoryParts<
   T extends {
-    carpart: string
+    carPart: string
     brand: string
-    availabilitystatus: Availabilitystatus
+    availabilityStatus: AvailabilityStatus
     category?: string
   },
->(parts: T[], filters: InventoryfilterState, category?: string | null): T[] {
-  const carpartQuery = filters.carpart.trim().toLowerCase()
+>(parts: T[], filters: InventoryFilterState, category?: string | null): T[] {
+  const carPartQuery = filters.carPart.trim().toLowerCase()
 
   return parts.filter((part) => {
     if (category && part.category !== category) return false
     if (
-      filters.availabilitystatus !== 'All' &&
-      part.availabilitystatus !== filters.availabilitystatus
+      filters.availabilityStatus !== 'All' &&
+      part.availabilityStatus !== filters.availabilityStatus
     ) {
       return false
     }
@@ -122,7 +122,7 @@ export default function Filter({
               onChange({
                 ...filters,
                 availabilityStatus: e.target
-                  .value as InventoryFilterState['availabilitystatus'],
+                  .value as InventoryFilterState['availabilityStatus'],
               })
             }
             className="form-input"

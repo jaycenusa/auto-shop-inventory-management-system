@@ -5,13 +5,20 @@ function normalizeHost(hostname: string): string {
 }
 
 /**
- * `dev.localhost` / `dev.*` — dual-mode preview host with Owner/Customer switcher.
+ * Dual-mode preview hosts (Owner/Customer switcher):
+ * - `dev.localhost` / `dev.*`
+ * - `*.github.io` (GitHub Pages demos)
  */
 export function isDevPreviewHost(
   hostname: string = typeof window !== 'undefined' ? window.location.hostname : 'localhost',
 ): boolean {
   const host = normalizeHost(hostname)
-  return host === 'dev' || host.startsWith('dev.')
+  return (
+    host === 'dev' ||
+    host.startsWith('dev.') ||
+    host === 'github.io' ||
+    host.endsWith('.github.io')
+  )
 }
 
 /**

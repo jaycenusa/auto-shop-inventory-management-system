@@ -67,7 +67,7 @@ export type GoogleCredentialResponse = {
   credential?: string
 }
 
-export async function renderGoogleSignInbutton(
+export async function renderGoogleSignInButton(
   container: HTMLElement,
   onSuccess: (user: AuthUser) => void,
   onError: (message: string) => void,

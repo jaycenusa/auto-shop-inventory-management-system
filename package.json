@@ -3,12 +3,16 @@
   "private": true,
   "version": "1.1.1",
   "type": "module",
+  "homepage": "https://jaycenusa.github.io/auto-shop-inventory-management-system",
   "scripts": {
     "dev": "webpack serve --mode development",
     "server": "node server/Index.cjs",
     "build": "tsc -b && webpack --mode production",
     "lint": "eslint .",
+    "preview": "webpack serve --mode production",
     "prod": "webpack serve --mode production",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
     "release": "semantic-release"
   },
   "dependencies": {
@@ -49,6 +53,7 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "gh-pages": "^6.3.0",
     "globals": "^17.6.0",
     "html-webpack-plugin": "^5.6.7",
     "mini-css-extract-plugin": "^2.10.2",
