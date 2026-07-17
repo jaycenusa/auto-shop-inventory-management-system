@@ -11,26 +11,45 @@ const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin'
 /** @param {{ mode?: string }} argv */
 module.exports = (env, argv) => {
   const isDev = argv.mode === 'development'
-  // Project Pages base path; override with PUBLIC_PATH=/ for custom domains / root hosting
-  const publicPath =
-    process.env.PUBLIC_PATH ??
-    (isDev ? '/' : '/auto-shop-inventory-management-system/')
   // webpack-cli sets WEBPACK_SERVE when using `webpack serve`
   const isServe = process.env.WEBPACK_SERVE === 'true'
   // MiniCssExtractPlugin breaks HMR and can show errors in the browser overlay when serving
   const extractCss = !isDev && !isServe
+  // GitHub Pages project site needs a subpath; local serve (dev or prod) must stay at /
+  const publicPath =
+    process.env.PUBLIC_PATH ??
+    (isDev || isServe ? '/' : '/auto-shop-inventory-management-system/')
 
   return {
     entry: './src/main.tsx',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isDev ? '[name].js' : '[name].[contenthash].js',
+      chunkFilename: isDev ? '[name].js' : '[name].[contenthash].js',
       assetModuleFilename: 'assets/[hash][ext][query]',
       clean: true,
       publicPath,
     },
     resolve: {
       extensions: ['.tsx', '.ts', '.jsx', '.js'],
+    },
+    // App pulls in React, Amplify, Recharts, etc. — above webpack's 244 KiB default
+    performance: {
+      hints: isDev ? false : 'warning',
+      maxAssetSize: 1024 * 1024,
+      maxEntrypointSize: 1024 * 1024,
+    },
+    optimization: {
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+        },
+      },
     },
     devtool: isDev ? 'inline-source-map' : 'source-map',
     devServer: {
