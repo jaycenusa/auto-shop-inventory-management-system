@@ -21,5 +21,12 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": [
+    "src/main.tsx",
+    "src/app.tsx",
+    "src/types/**/*.ts",
+    "src/constant/**/*.ts",
+    "src/env.d.ts",
+    "src/assets.d.ts"
+  ]
 }

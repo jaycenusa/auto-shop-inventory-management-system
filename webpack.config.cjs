@@ -17,7 +17,7 @@ module.exports = (env, argv) => {
   const extractCss = !isDev && !isServe
 
   return {
-    entry: './src/Main.tsx',
+    entry: './src/main.tsx',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isDev ? '[name].js' : '[name].[contenthash].js',
@@ -35,12 +35,7 @@ module.exports = (env, argv) => {
       liveReload: isDev,
       port: 3000,
       open: true,
-      client: {
-        overlay: {
-          errors: true,
-          warnings: false,
-        },
-      },
+      allowedHosts: 'all',
       proxy: [
         {
           context: ['/api'],

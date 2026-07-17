@@ -1,3 +1,19 @@
+# Auto Shop Inventory Management System
+
+React + TypeScript inventory app with two site faces resolved by hostname:
+
+| Host | View |
+|------|------|
+| Apex / `localhost` | Customer portal (service prices) |
+| `internal.*` | Owner / internal dashboard |
+| `dev.*` | Both — switch Owner ↔ Customer in the banner |
+
+## Prerequisites
+
+- **Node.js** 20+ (LTS recommended)
+- **npm** 10+ (comes with Node)
+
+## Setup
 # Auto Shop Inventory Management System (IMS)
 
 A full-width React application for managing auto shop parts inventory—browse stock, add and update parts, filter by category, and receive low-stock email alerts.
@@ -113,38 +129,70 @@ Production output is written to `dist/`.
 ## Getting started
 
 ```bash
+# Clone the repo (adjust URL if needed)
+git clone <repo-url>
+cd auto-shop-inventory-management-system
+
+# Install dependencies
 npm install
+```
+
+## Run locally
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Webpack serves the app on **port 3000**. Modern browsers resolve `*.localhost` to `127.0.0.1`, so no `/etc/hosts` edits are required.
 
-## Email alerts (nodemailer)
+### Local URLs
 
-Stock alerts are sent by the Node server (not in the browser).
+| URL | What you get |
+|-----|----------------|
+| [http://localhost:3000](http://localhost:3000) | Customer portal |
+| [http://internal.localhost:3000](http://internal.localhost:3000) | Owner / internal app |
+| [http://dev.localhost:3000](http://dev.localhost:3000) | Dual mode (Owner/Customer switcher) |
 
-1. Copy `.env.example` to `.env` (if present) or create `.env`
-2. Set `SMTP_USER` and `SMTP_PASS` (Gmail [App Password](https://myaccount.google.com/apppasswords) recommended)
-3. Optionally set `ALERT_EMAIL_TO` for the recipient address
-4. Run `npm run server` alongside `npm run dev`
+### Optional query override
 
-## Docker
+Force a view on any host (handy for quick checks):
 
-Multi-container setup: Nginx serves the SPA and proxies `/api` to the Node API.
+- [http://localhost:3000?view=owner](http://localhost:3000?view=owner)
+- [http://localhost:3000?view=customer](http://localhost:3000?view=customer)
 
-| File | Purpose |
-| ---- | ------- |
-| `Dockerfile.web` | Build SPA and serve with Nginx |
-| `Dockerfile.api` | Express + nodemailer API |
-| `nginx.conf` | SPA routing and `/api` proxy |
-| `docker-compose.yml` | `web` + `api` services |
+## Other scripts
 
-```bash
-docker compose up --build
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server (port 3000) |
+| `npm run build` | Type-check + production build → `dist/` |
+| `npm run preview` | Serve production build |
+| `npm run lint` | ESLint |
+| `npm run server` | Optional Express API on port 3001 (proxied at `/api`) |
 
-App: **http://localhost:8080**. Provide SMTP credentials in `.env` for the API container.
+## Production host mapping (target)
 
-## Expanding ESLint
+When you deploy behind a real domain (example: `autoshop.com`):
 
-For stricter, type-aware rules you can switch from `typescript-eslint` recommended to `recommendedTypeChecked` / `strictTypeChecked` and point `parserOptions.project` at your tsconfig files. See the [typescript-eslint docs](https://typescript-eslint.io/getting-started/typed-linting).
+| Host | View |
+|------|------|
+| `autoshop.com` (apex) | Customer portal |
+| `internal.autoshop.com` | Owner / internal app |
+| `dev.autoshop.com` (optional) | Dual-mode preview |
+
+Serve the **same** build on all hostnames; the app picks the view from `window.location.hostname`.
+
+## Language
+
+Use the language dropdown in the top banner (EN / 繁中 / 简中 / ES). UI labels and seed part names follow the selected language.
+
+## Troubleshooting
+
+**`internal.localhost` or `dev.localhost` won’t load**  
+Restart the dev server after pull (`Ctrl+C`, then `npm run dev`). Webpack is configured with `allowedHosts: 'all'`.
+
+**Still seeing the wrong view**  
+Hard-refresh the tab (`Cmd+Shift+R` / `Ctrl+Shift+R`), or try `?view=owner` / `?view=customer`.
+
+**Port 3000 already in use**  
+Stop the other process, or change `port` in `webpack.config.cjs` under `devServer`.
