@@ -1,10 +1,14 @@
 name: Release
 
+# CodeQL is GitHub default setup (dynamic/github-code-scanning/codeql), so it
+# cannot be sequenced with `needs:`. Wait for that workflow to finish on main,
+# then release + deploy.
 on:
-  push:
-    branches:
-      - main
-      - master
+  workflow_run:
+    workflows:
+      - CodeQL
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -12,15 +16,21 @@ permissions:
   pull-requests: write
   pages: write
   id-token: write
+  actions: read
 
 jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.head_branch == 'main' ||
+       github.event.workflow_run.head_branch == 'master')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Setup Node
@@ -44,6 +54,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
