@@ -1,8 +1,8 @@
 name: Release
 
 # CodeQL is GitHub default setup (not a repo workflow), so it cannot use `needs:`.
-# Avoid workflow_run + checkout of head_sha (CodeQL: untrusted checkout in privileged context).
-# Instead: on push to main, wait for CodeQL checks on this commit, then release + deploy.
+# Wait until Code Scanning analyses for this commit are published (what the branch
+# ruleset enforces), then run semantic-release + deploy.
 on:
   push:
     branches:
@@ -17,63 +17,84 @@ permissions:
   id-token: write
   actions: read
   checks: read
+  security-events: read
 
 jobs:
   wait-for-codeql:
     name: Wait for CodeQL
     runs-on: ubuntu-latest
     steps:
-      - name: Wait until CodeQL checks succeed for this commit
+      - name: Wait until Code Scanning analyses succeed for this commit
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          BRANCH_REF: ${{ github.ref }}
+          # Default setup currently analyzes actions + javascript-typescript
+          REQUIRED_ANALYSES: '2'
         run: |
           set -euo pipefail
-          SHA='${{ github.sha }}'
-          REPO='${{ github.repository }}'
-          echo "Waiting for CodeQL check runs on ${SHA}"
+          echo "Waiting for Code Scanning on ${SHA} (${BRANCH_REF}), need >= ${REQUIRED_ANALYSES} CodeQL analyses"
+
+          CODEQL_WORKFLOW_ID="$(
+            gh api "repos/${REPO}/actions/workflows?per_page=100" \
+              --jq '.workflows[] | select(.name == "CodeQL") | .id' | head -n1
+          )"
+          if [[ -z "${CODEQL_WORKFLOW_ID}" ]]; then
+            echo "Could not find a workflow named CodeQL"
+            exit 1
+          fi
+          echo "CodeQL workflow id: ${CODEQL_WORKFLOW_ID}"
 
           for attempt in $(seq 1 90); do
-            payload="$(gh api "repos/${REPO}/commits/${SHA}/check-runs?per_page=100")"
-            codeql="$(
-              printf '%s' "${payload}" | jq '[.check_runs[] | select(
-                .name == "CodeQL" or
-                (.name | startswith("Analyze (")) or
-                (.name | test("Code scanning"; "i"))
-              )]'
+            workflow_state="$(
+              gh api "repos/${REPO}/actions/workflows/${CODEQL_WORKFLOW_ID}/runs?head_sha=${SHA}&per_page=5" \
+                --jq '[.workflow_runs[]] | first | "\(.status // "missing"):\(.conclusion // "null")"' \
+                2>/dev/null || echo 'missing:null'
             )"
-            count="$(printf '%s' "${codeql}" | jq 'length')"
+            echo "[${attempt}/90] CodeQL workflow: ${workflow_state}"
 
-            if [[ "${count}" -eq 0 ]]; then
-              echo "[${attempt}/90] CodeQL checks not reported yet"
+            case "${workflow_state}" in
+              missing:null|queued:*|in_progress:*|waiting:*|requested:*|pending:*)
+                sleep 20
+                continue
+                ;;
+              completed:success) ;;
+              completed:*)
+                echo "CodeQL workflow failed: ${workflow_state}"
+                exit 1
+                ;;
+            esac
+
+            # Ruleset code_scanning looks at uploaded analyses for the branch tip.
+            # Query by branch ref, then filter to this commit SHA.
+            analyses="$(
+              gh api "repos/${REPO}/code-scanning/analyses?ref=${BRANCH_REF}&per_page=50" \
+                | jq --arg sha "${SHA}" '[.[] | select(.commit_sha == $sha and .tool.name == "CodeQL")]'
+            )"
+            count="$(printf '%s' "${analyses}" | jq 'length')"
+            errors="$(printf '%s' "${analyses}" | jq '[.[] | select((.error // "") != "")] | length')"
+
+            printf '%s' "${analyses}" | jq -r '.[] | "analysis id=\(.id) created=\(.created_at) error=\(.error // "") results=\(.results_count)"' \
+              || true
+            echo "[${attempt}/90] CodeQL analyses for commit: ${count} (errors=${errors})"
+
+            if [[ "${count}" -lt "${REQUIRED_ANALYSES}" ]]; then
               sleep 20
               continue
             fi
 
-            printf '%s' "${codeql}" | jq -r '.[] | "\(.name): status=\(.status) conclusion=\(.conclusion // "null")"'
-
-            incomplete="$(printf '%s' "${codeql}" | jq '[.[] | select(.status != "completed")] | length')"
-            if [[ "${incomplete}" -gt 0 ]]; then
-              echo "[${attempt}/90] CodeQL still running"
-              sleep 20
-              continue
-            fi
-
-            failed="$(printf '%s' "${codeql}" | jq '[.[] | select(
-              .conclusion != "success" and
-              .conclusion != "neutral" and
-              .conclusion != "skipped"
-            )] | length')"
-            if [[ "${failed}" -gt 0 ]]; then
-              echo "CodeQL failed for ${SHA}"
-              printf '%s' "${codeql}" | jq .
+            if [[ "${errors}" -gt 0 ]]; then
+              echo "CodeQL analyses reported errors for ${SHA}"
+              printf '%s' "${analyses}" | jq .
               exit 1
             fi
 
-            echo "CodeQL succeeded for ${SHA}"
+            echo "Code Scanning is complete for ${SHA}"
             exit 0
           done
 
-          echo "Timed out waiting for CodeQL on ${SHA}"
+          echo "Timed out waiting for Code Scanning on ${SHA}"
           exit 1
 
   release:
