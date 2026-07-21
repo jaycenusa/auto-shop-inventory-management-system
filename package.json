@@ -60,7 +60,7 @@
     "postcss": "^8.5.14",
     "postcss-loader": "^8.2.1",
     "react-refresh": "^0.18.0",
-    "semantic-release": "^24.2.9",
+    "semantic-release": "^25.0.8",
     "style-loader": "^4.0.0",
     "tailwindcss": "^4.3.0",
     "typescript": "~6.0.2",
