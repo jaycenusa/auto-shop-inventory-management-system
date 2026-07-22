@@ -1,8 +1,7 @@
 name: Release
 
-# CodeQL is GitHub default setup (not a repo workflow), so it cannot use `needs:`.
-# Wait until Code Scanning analyses for this commit are published (what the branch
-# ruleset enforces), then run semantic-release + deploy.
+# Run CodeQL per language (matrix) in parallel with semantic-release, then deploy
+# only when both CodeQL and release succeed.
 on:
   push:
     branches:
@@ -17,90 +16,38 @@ permissions:
   id-token: write
   actions: read
   checks: read
-  security-events: read
+  security-events: write
 
 jobs:
-  wait-for-codeql:
-    name: Wait for CodeQL
+  codeql:
+    name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        language:
+          - actions
+          - javascript-typescript
     steps:
-      - name: Wait until Code Scanning analyses succeed for this commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          BRANCH_REF: ${{ github.ref }}
-          # Default setup currently analyzes actions + javascript-typescript
-          REQUIRED_ANALYSES: '2'
-        run: |
-          set -euo pipefail
-          echo "Waiting for Code Scanning on ${SHA} (${BRANCH_REF}), need >= ${REQUIRED_ANALYSES} CodeQL analyses"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-          CODEQL_WORKFLOW_ID="$(
-            gh api "repos/${REPO}/actions/workflows?per_page=100" \
-              --jq '.workflows[] | select(.name == "CodeQL") | .id' | head -n1
-          )"
-          if [[ -z "${CODEQL_WORKFLOW_ID}" ]]; then
-            echo "Could not find a workflow named CodeQL"
-            exit 1
-          fi
-          echo "CodeQL workflow id: ${CODEQL_WORKFLOW_ID}"
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
 
-          for attempt in $(seq 1 90); do
-            workflow_state="$(
-              gh api "repos/${REPO}/actions/workflows/${CODEQL_WORKFLOW_ID}/runs?head_sha=${SHA}&per_page=5" \
-                --jq '[.workflow_runs[]] | first | "\(.status // "missing"):\(.conclusion // "null")"' \
-                2>/dev/null || echo 'missing:null'
-            )"
-            echo "[${attempt}/90] CodeQL workflow: ${workflow_state}"
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
-            case "${workflow_state}" in
-              missing:null|queued:*|in_progress:*|waiting:*|requested:*|pending:*)
-                sleep 20
-                continue
-                ;;
-              completed:success) ;;
-              completed:*)
-                echo "CodeQL workflow failed: ${workflow_state}"
-                exit 1
-                ;;
-            esac
-
-            # Ruleset code_scanning looks at uploaded analyses for the branch tip.
-            # Query by branch ref, then filter to this commit SHA.
-            analyses="$(
-              gh api "repos/${REPO}/code-scanning/analyses?ref=${BRANCH_REF}&per_page=50" \
-                | jq --arg sha "${SHA}" '[.[] | select(.commit_sha == $sha and .tool.name == "CodeQL")]'
-            )"
-            count="$(printf '%s' "${analyses}" | jq 'length')"
-            errors="$(printf '%s' "${analyses}" | jq '[.[] | select((.error // "") != "")] | length')"
-
-            printf '%s' "${analyses}" | jq -r '.[] | "analysis id=\(.id) created=\(.created_at) error=\(.error // "") results=\(.results_count)"' \
-              || true
-            echo "[${attempt}/90] CodeQL analyses for commit: ${count} (errors=${errors})"
-
-            if [[ "${count}" -lt "${REQUIRED_ANALYSES}" ]]; then
-              sleep 20
-              continue
-            fi
-
-            if [[ "${errors}" -gt 0 ]]; then
-              echo "CodeQL analyses reported errors for ${SHA}"
-              printf '%s' "${analyses}" | jq .
-              exit 1
-            fi
-
-            echo "Code Scanning is complete for ${SHA}"
-            exit 0
-          done
-
-          echo "Timed out waiting for Code Scanning on ${SHA}"
-          exit 1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
 
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    needs: wait-for-codeql
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,7 +71,9 @@ jobs:
   deploy:
     name: Deploy GitHub Pages
     runs-on: ubuntu-latest
-    needs: release
+    needs:
+      - codeql
+      - release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
