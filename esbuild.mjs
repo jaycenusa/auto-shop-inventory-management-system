@@ -10,7 +10,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolvePublicPath } from './scripts/resolve-public-path.mjs'
 
@@ -316,15 +316,17 @@ async function startPreview() {
 
   const server = createServer((req, res) => {
     const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')
-    let filePath = join(distDir, urlPath === '/' ? 'index.html' : urlPath)
+    const safeDistDir = resolve(distDir)
+    const requestedPath = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '')
+    let filePath = resolve(safeDistDir, requestedPath)
 
-    if (!filePath.startsWith(distDir)) {
+    if (filePath !== safeDistDir && !filePath.startsWith(safeDistDir + sep)) {
       res.writeHead(403).end('Forbidden')
       return
     }
 
     if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
-      filePath = join(distDir, 'index.html')
+      filePath = resolve(safeDistDir, 'index.html')
     }
 
     const type = mime[extname(filePath)] ?? 'application/octet-stream'
