@@ -12,6 +12,8 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolvePublicPath } from './scripts/resolve-public-path.mjs'
+import { resolveSafeDistPath } from './scripts/safe-dist-path.mjs'
 
 dotenv.config()
 
@@ -19,7 +21,11 @@ const root = dirname(fileURLToPath(import.meta.url))
 const distDir = join(root, 'dist')
 const cssOutFile = join(distDir, 'main.css')
 const command = process.argv[2] ?? 'build'
-const isProd = command === 'build'
+const isProd = command === 'build' || command === 'preview'
+const publicPath = resolvePublicPath({
+  isProd: command === 'build',
+  envPublicPath: process.env.PUBLIC_PATH,
+})
 
 function loadDefine() {
   const redirectSignIn =
@@ -37,7 +43,22 @@ function loadDefine() {
     AWS_COGNITO_DOMAIN: JSON.stringify(process.env.AWS_COGNITO_DOMAIN ?? ''),
     AWS_REDIRECT_SIGN_IN: JSON.stringify(redirectSignIn),
     AWS_REDIRECT_SIGN_OUT: JSON.stringify(redirectSignOut),
+    DEFAULT_API_BASE_URL: JSON.stringify(
+      process.env.DEFAULT_API_BASE_URL ??
+        'https://autoshopapiservice.onrender.com',
+    ),
   }
+}
+
+/** CSS is built by Tailwind CLI into dist/main.css and linked from index.html. */
+const ignoreCssPlugin = {
+  name: 'ignore-css',
+  setup(build) {
+    build.onLoad({ filter: /\.css$/ }, () => ({
+      contents: '',
+      loader: 'js',
+    }))
+  },
 }
 
 function cleanDist() {
@@ -52,10 +73,10 @@ function copyPublicAssets() {
 }
 
 function writeIndexHtml(jsPath) {
-   const template = readFileSync(join(root, 'index.html'), 'utf8')
+  const template = readFileSync(join(root, 'index.html'), 'utf8')
   const tags = [
-    '<link rel="stylesheet" href="/main.css">',
-    `<script type="module" src="/${jsPath}"></script>`,
+    `<link rel="stylesheet" href="${publicPath}main.css">`,
+    `<script type="module" src="${publicPath}${jsPath}"></script>`,
   ]
 
   const html = template.replace(
@@ -93,7 +114,7 @@ function runTailwindCss({ watch = false, minify = false } = {}) {
     const args = [
       '@tailwindcss/cli',
       '-i',
-      join(root, 'src/Index.css'),
+      join(root, 'src/index.css'),
       '-o',
       cssOutFile,
     ]
@@ -128,6 +149,7 @@ function createJsBuildOptions() {
     outdir: distDir,
     entryNames: isProd ? '[name]-[hash]' : '[name]',
     assetNames: 'assets/[name]-[hash]',
+    publicPath,
     format: 'esm',
     platform: 'browser',
     target: ['es2020'],
@@ -137,6 +159,15 @@ function createJsBuildOptions() {
     define: loadDefine(),
     metafile: true,
     logLevel: 'info',
+    loader: {
+      '.png': 'file',
+      '.jpg': 'file',
+      '.jpeg': 'file',
+      '.gif': 'file',
+      '.svg': 'file',
+      '.webp': 'file',
+    },
+    plugins: [ignoreCssPlugin],
   }
 }
 
@@ -169,7 +200,6 @@ async function startDev() {
   await ctx.watch()
   await rebuildAndWriteHtml()
 
-  // esbuild serve does not support `proxy`; run app on 3000 and proxy to esbuild + API
   const { port: assetPort } = await ctx.serve({
     servedir: distDir,
     port: 0,
@@ -211,13 +241,18 @@ async function startDev() {
       return
     }
 
+    // Rewrite Host so esbuild serve accepts *.localhost (and other) Host headers.
+    // Webpack equivalent: devServer.allowedHosts = 'all'
     const assetReq = httpRequest(
       {
         hostname: '127.0.0.1',
         port: assetPort,
         path: url,
         method: req.method,
-        headers: req.headers,
+        headers: {
+          ...req.headers,
+          host: `127.0.0.1:${assetPort}`,
+        },
       },
       (assetRes) => {
         res.writeHead(assetRes.statusCode ?? 500, assetRes.headers)
@@ -239,11 +274,17 @@ async function startDev() {
   })
 
   console.info(`Dev server: http://localhost:${devPort}`)
-  console.info(`(esbuild assets on port ${assetPort}, API proxy → ${apiTarget.port})`)
+  console.info(`  Customer:  http://localhost:${devPort}`)
+  console.info(`  Owner:     http://internal.localhost:${devPort}`)
+  console.info(`  Dual mode: http://dev.localhost:${devPort}`)
+  console.info(
+    `(esbuild assets on port ${assetPort}, API proxy → ${apiTarget.port})`,
+  )
 
   const shutdown = () => {
     devServer.close()
     tailwindProcess.kill()
+    void ctx.dispose()
     process.exit(0)
   }
 
@@ -251,9 +292,65 @@ async function startDev() {
   process.on('SIGTERM', shutdown)
 }
 
+async function startPreview() {
+  if (!existsSync(join(distDir, 'index.html'))) {
+    await buildOnce()
+  }
+
+  const { createReadStream, statSync } = await import('node:fs')
+  const { extname } = await import('node:path')
+
+  const previewPort = 3000
+  const mime = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.map': 'application/json',
+    '.ico': 'image/x-icon',
+  }
+
+  const server = createServer((req, res) => {
+    let filePath = resolveSafeDistPath(distDir, req.url ?? '/')
+    if (filePath === null) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' }).end('Forbidden')
+      return
+    }
+
+    if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
+      filePath = join(distDir, 'index.html')
+    }
+
+    const type = mime[extname(filePath)] ?? 'application/octet-stream'
+    res.writeHead(200, { 'Content-Type': type })
+    createReadStream(filePath).pipe(res)
+  })
+
+  await new Promise((resolve, reject) => {
+    server.listen(previewPort, '0.0.0.0', () => resolve())
+    server.on('error', reject)
+  })
+
+  console.info(`Preview server: http://localhost:${previewPort}`)
+
+  const shutdown = () => {
+    server.close()
+    process.exit(0)
+  }
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
+}
+
 try {
   if (command === 'dev') {
     await startDev()
+  } else if (command === 'preview' || command === 'prod') {
+    await startPreview()
   } else {
     await buildOnce()
     console.info('Build complete → dist/')
