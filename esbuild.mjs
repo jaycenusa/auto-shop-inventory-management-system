@@ -10,9 +10,10 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, join, resolve, sep } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolvePublicPath } from './scripts/resolve-public-path.mjs'
+import { resolveSafeDistPath } from './scripts/safe-dist-path.mjs'
 
 dotenv.config()
 
@@ -315,35 +316,14 @@ async function startPreview() {
   }
 
   const server = createServer((req, res) => {
-    let urlPath
-    try {
-      urlPath = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')
-    } catch {
-      res.writeHead(400).end('Bad Request')
-      return
-    }
-
-    const safeDistDir = resolve(distDir)
-    const normalizedUrlPath = urlPath.replace(/\/+/g, '/')
-    if (
-      normalizedUrlPath.includes('\0') ||
-      !/^\/[A-Za-z0-9._/-]*$/.test(normalizedUrlPath)
-    ) {
-      res.writeHead(400).end('Bad Request')
-      return
-    }
-
-    const requestedPath =
-      normalizedUrlPath === '/' ? 'index.html' : normalizedUrlPath.replace(/^\/+/, '')
-    let filePath = resolve(safeDistDir, requestedPath)
-
-    if (filePath !== safeDistDir && !filePath.startsWith(safeDistDir + sep)) {
-      res.writeHead(403).end('Forbidden')
+    let filePath = resolveSafeDistPath(distDir, req.url ?? '/')
+    if (filePath === null) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' }).end('Forbidden')
       return
     }
 
     if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
-      filePath = resolve(safeDistDir, 'index.html')
+      filePath = join(distDir, 'index.html')
     }
 
     const type = mime[extname(filePath)] ?? 'application/octet-stream'
