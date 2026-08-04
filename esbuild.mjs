@@ -315,9 +315,26 @@ async function startPreview() {
   }
 
   const server = createServer((req, res) => {
-    const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')
+    let urlPath
+    try {
+      urlPath = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')
+    } catch {
+      res.writeHead(400).end('Bad Request')
+      return
+    }
+
     const safeDistDir = resolve(distDir)
-    const requestedPath = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '')
+    const normalizedUrlPath = urlPath.replace(/\/+/g, '/')
+    if (
+      normalizedUrlPath.includes('\0') ||
+      !/^\/[A-Za-z0-9._/-]*$/.test(normalizedUrlPath)
+    ) {
+      res.writeHead(400).end('Bad Request')
+      return
+    }
+
+    const requestedPath =
+      normalizedUrlPath === '/' ? 'index.html' : normalizedUrlPath.replace(/^\/+/, '')
     let filePath = resolve(safeDistDir, requestedPath)
 
     if (filePath !== safeDistDir && !filePath.startsWith(safeDistDir + sep)) {
