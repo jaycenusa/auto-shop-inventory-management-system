@@ -26,6 +26,7 @@
     "src/app.tsx",
     "src/types/**/*.ts",
     "src/constant/**/*.ts",
+    "src/service/**/*.ts",
     "src/env.d.ts",
     "src/assets.d.ts"
   ]
