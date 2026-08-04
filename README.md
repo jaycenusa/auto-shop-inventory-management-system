@@ -1,3 +1,19 @@
+# Auto Shop Inventory Management System
+
+React + TypeScript inventory app with two site faces resolved by hostname:
+
+| Host | View |
+|------|------|
+| Apex / `localhost` | Customer portal (service prices) |
+| `internal.*` | Owner / internal dashboard |
+| `dev.*` | Both — switch Owner ↔ Customer in the banner |
+
+## Prerequisites
+
+- **Node.js** 20+ (LTS recommended)
+- **npm** 10+ (comes with Node)
+
+## Setup
 # Auto Shop Inventory Management System (IMS)
 
 A full-width React application for managing auto shop parts inventory—browse stock, add and update parts, filter by category, and receive low-stock email alerts.
@@ -39,9 +55,8 @@ A full-width React application for managing auto shop parts inventory—browse s
 - Same required-field validation as add flow
 
 ### Stock alerts (email)
-- Server-side email notifications for **Low Stock** and **Out of Stock** parts (nodemailer)
-- Express API at `/api/notify/email`; dev server proxies `/api` to port 3001
-- Configure SMTP via `.env` (see [Email alerts](#email-alerts-nodemailer))
+- Client-side stock alert helpers for **Low Stock** and **Out of Stock** parts
+- Configure SMTP / notification delivery separately when a backend is reintroduced
 
 ### UI building blocks
 - **`Shared/Filter`** — filter state, logic, and UI
@@ -53,24 +68,19 @@ A full-width React application for managing auto shop parts inventory—browse s
 
 - **React 19** with **TypeScript**
 - **react-hook-form** — form state and validation
-- **Webpack 5** — bundling, dev server, and production builds
-- **Babel** — JSX/TS transpilation and React Fast Refresh in development
-- **Tailwind CSS v4** — via `@import "tailwindcss"` in `src/Index.css` and PostCSS (`@tailwindcss/postcss`)
-- **Express** + **nodemailer** — notification API
+- **esbuild** — bundling, dev server, and production builds (`esbuild.mjs`)
+- **Tailwind CSS v4** — via `@import "tailwindcss"` in `src/index.css` and `@tailwindcss/cli`
 - **ESLint** — flat config in `eslint.config.js`
 
 ## Scripts
 
 | Command           | Description                                      |
 | ----------------- | ------------------------------------------------ |
-| `npm run dev`     | Start Webpack dev server (default: port 3000)    |
-| `npm run server`  | Start notification API (port 3001)               |
+| `npm run dev`     | Start esbuild dev server (default: port 3000)    |
 | `npm run build`   | Type-check with `tsc -b`, then production build  |
-| `npm run preview` | Serve production build via Webpack dev server    |
+| `npm run preview` | Serve production build from `dist/`              |
 | `npm run lint`    | Run ESLint                                       |
 | `npm run release` | Analyze commits and publish a version (CI)       |
-
-For local development with email alerts, run **`npm run dev`** and **`npm run server`** in separate terminals.
 
 ## Releases
 
@@ -80,7 +90,7 @@ Pushes to **`main`** (or **`master`**) run [semantic-release](https://semantic-r
 | ------- | ------------ | ---------------------------- |
 | `feat`  | minor        | `feat: add order cart`       |
 | `fix`   | patch        | `fix: inventory search sync` |
-| `chore` | patch        | `chore: update webpack`      |
+| `chore` | patch        | `chore: update esbuild`      |
 
 A releasable push updates `package.json`, `CHANGELOG.md`, creates a Git tag (e.g. `v0.2.0`), and opens a GitHub Release.
 
@@ -106,45 +116,74 @@ Production output is written to `dist/`.
 | `src/Shared/PictureDropzone.tsx` | Image upload dropzone |
 | `src/Database/InventoryData.ts` | Part types and seed data |
 | `src/Utils/PartValidation.ts` | react-hook-form validation rules |
-| `src/Services/NotificationService.ts` | Client stock-alert API calls |
-| `server/Index.cjs` | Express API (`/api/notify/email`) |
-| `server/NotificationService.cjs` | nodemailer email sending |
+| `src/Services/NotificationService.ts` | Client stock-alert helpers |
 
 ## Getting started
 
 ```bash
+# Clone the repo (adjust URL if needed)
+git clone <repo-url>
+cd auto-shop-inventory-management-system
+
+# Install dependencies
 npm install
+```
+
+## Run locally
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+esbuild serves the app on **port 3000**. Modern browsers resolve `*.localhost` to `127.0.0.1`, so no `/etc/hosts` edits are required.
 
-## Email alerts (nodemailer)
+### Local URLs
 
-Stock alerts are sent by the Node server (not in the browser).
+| URL | What you get |
+|-----|----------------|
+| [http://localhost:3000](http://localhost:3000) | Customer portal |
+| [http://internal.localhost:3000](http://internal.localhost:3000) | Owner / internal app |
+| [http://dev.localhost:3000](http://dev.localhost:3000) | Dual mode (Owner/Customer switcher) |
 
-1. Copy `.env.example` to `.env` (if present) or create `.env`
-2. Set `SMTP_USER` and `SMTP_PASS` (Gmail [App Password](https://myaccount.google.com/apppasswords) recommended)
-3. Optionally set `ALERT_EMAIL_TO` for the recipient address
-4. Run `npm run server` alongside `npm run dev`
+### Optional query override
 
-## Docker
+Force a view on any host (handy for quick checks):
 
-Multi-container setup: Nginx serves the SPA and proxies `/api` to the Node API.
+- [http://localhost:3000?view=owner](http://localhost:3000?view=owner)
+- [http://localhost:3000?view=customer](http://localhost:3000?view=customer)
 
-| File | Purpose |
-| ---- | ------- |
-| `Dockerfile.web` | Build SPA and serve with Nginx |
-| `Dockerfile.api` | Express + nodemailer API |
-| `nginx.conf` | SPA routing and `/api` proxy |
-| `docker-compose.yml` | `web` + `api` services |
+## Other scripts
 
-```bash
-docker compose up --build
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server (port 3000) |
+| `npm run build` | Type-check + production build → `dist/` |
+| `npm run preview` | Serve production build |
+| `npm run lint` | ESLint |
 
-App: **http://localhost:8080**. Provide SMTP credentials in `.env` for the API container.
+## Production host mapping (target)
 
-## Expanding ESLint
+When you deploy behind a real domain (example: `autoshop.com`):
 
-For stricter, type-aware rules you can switch from `typescript-eslint` recommended to `recommendedTypeChecked` / `strictTypeChecked` and point `parserOptions.project` at your tsconfig files. See the [typescript-eslint docs](https://typescript-eslint.io/getting-started/typed-linting).
+| Host | View |
+|------|------|
+| `autoshop.com` (apex) | Customer portal |
+| `internal.autoshop.com` | Owner / internal app |
+| `dev.autoshop.com` (optional) | Dual-mode preview |
+
+Serve the **same** build on all hostnames; the app picks the view from `window.location.hostname`.
+
+## Language
+
+Use the language dropdown in the top banner (EN / 繁中 / 简中 / ES). UI labels and seed part names follow the selected language.
+
+## Troubleshooting
+
+**`internal.localhost` or `dev.localhost` won’t load**  
+Restart the dev server after pull (`Ctrl+C`, then `npm run dev`). The esbuild proxy rewrites the `Host` header so `*.localhost` works without `/etc/hosts` edits.
+
+**Still seeing the wrong view**  
+Hard-refresh the tab (`Cmd+Shift+R` / `Ctrl+Shift+R`), or try `?view=owner` / `?view=customer`.
+
+**Port 3000 already in use**  
+Stop the other process, or change `devPort` in `esbuild.mjs`.
