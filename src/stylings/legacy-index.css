@@ -9,7 +9,6 @@
 @import './pages/homepage.css';
 @import './pages/inventory-page.css';
 @import './components/order-cart.css';
-@import './components/add-car-part.css';
 @import './components/modify-car-part.css';
 @import './modal/login-modal.css';
 @import './oauth/header-auth.css';
