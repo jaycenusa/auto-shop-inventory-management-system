@@ -1,8 +1,8 @@
-import { useState, useMemo, type Dispatch, type SetStateAction } from "react";
+import { useState, useMemo } from "react";
 import {
-  Search, Plus, Zap, Edit2, Trash2, ShoppingCart, Tag,
+  Search, Plus, Zap, Edit2, ShoppingCart, Tag,
 } from "lucide-react";
-import type { Part } from "../types/part";
+import type { Part, PartRequest } from "../types/part";
 import { StatusBadge } from "../utils/badge";
 import { getStatus } from "../utils/status";
 import { Modal } from "../shared/modal";
@@ -12,15 +12,15 @@ import { StockBar } from "../shared/stock-bar";
 import { useLang, usePartName } from "../i18n/lang-context";
 import { getPartNameSearchTerms } from "../i18n/part-names";
 import { fmtCurrency, totalServicePrice } from "../utils/pricing";
-
-let _id = 200;
-const genId = (prefix: string) => `${prefix}${++_id}`;
+import { UNAVAILABLE } from "../utils/unavailable";
 
 const CATEGORIES = ["Engine", "Brakes", "Suspension", "Electrical", "Transmission"];
 
-export default function Inventory({ parts, setParts, onQuickReorder }: {
+export default function Inventory({ parts, unavailable = false, createPart, updatePart, onQuickReorder }: {
   parts: Part[];
-  setParts: Dispatch<SetStateAction<Part[]>>;
+  unavailable?: boolean;
+  createPart: (request: PartRequest) => Promise<Part>;
+  updatePart: (id: string, request: PartRequest) => Promise<Part>;
   onQuickReorder: (part: Part) => void;
 }) {
   const t = useLang();
@@ -61,21 +61,26 @@ export default function Inventory({ parts, setParts, onQuickReorder }: {
     setEditPart(p);
   }
 
-  function save() {
-    const data = {
-      ...form,
+  async function save() {
+    const data: PartRequest = {
+      sku: form.sku,
+      name: form.name,
+      category: form.category,
       stock: Number(form.stock),
       threshold: Number(form.threshold),
       reorderQty: Number(form.reorderQty),
       unitPrice: Number(form.unitPrice),
       markupPct: Number(form.markupPct),
       labourCost: Number(form.labourCost),
+      supplier: form.supplier,
+      location: form.location,
+      autoReorder: form.autoReorder,
     };
     if (editPart) {
-      setParts(ps => ps.map(p => p.id === editPart.id ? { ...p, ...data } : p));
+      await updatePart(editPart.id, data);
       setEditPart(null);
     } else {
-      setParts(ps => [...ps, { id: genId("p"), ...data }]);
+      await createPart(data);
       setShowAdd(false);
     }
   }
@@ -129,7 +134,7 @@ export default function Inventory({ parts, setParts, onQuickReorder }: {
       </div>
       <div className="flex gap-3 pt-2">
         <button
-          onClick={save}
+          onClick={() => void save()}
           className="flex-1 py-2.5 bg-foreground text-primary-foreground text-[11px] font-mono font-semibold uppercase tracking-widest hover:bg-[#c94318] transition-colors"
         >
           {editPart ? t("invSaveChanges") : t("invAddPart")}
@@ -155,7 +160,9 @@ export default function Inventory({ parts, setParts, onQuickReorder }: {
       <div className="flex items-end justify-between mb-6">
         <div>
           <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-            {filtered.length} {t("invPartsOf")} {parts.length} {t("invParts")}
+            {unavailable
+              ? UNAVAILABLE
+              : `${filtered.length} ${t("invPartsOf")} ${parts.length} ${t("invParts")}`}
           </p>
           <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-4xl font-bold uppercase tracking-tight text-foreground">
             {t("invTitle")}
@@ -253,9 +260,6 @@ export default function Inventory({ parts, setParts, onQuickReorder }: {
                           <ShoppingCart className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button onClick={() => setParts(ps => ps.filter(x => x.id !== p.id))} className="p-1.5 text-muted-foreground hover:text-red-600 transition-colors rounded-sm hover:bg-muted">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -263,8 +267,10 @@ export default function Inventory({ parts, setParts, onQuickReorder }: {
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && (
-          <div className="py-16 text-center text-muted-foreground font-mono text-sm">{t("noPartsFound")}</div>
+        {(unavailable || filtered.length === 0) && (
+          <div className="py-16 text-center text-muted-foreground font-mono text-sm">
+            {unavailable ? UNAVAILABLE : t("noPartsFound")}
+          </div>
         )}
       </div>
       <div className="mt-3 flex items-center gap-4 text-[11px] font-mono text-muted-foreground flex-wrap">

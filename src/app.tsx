@@ -1,15 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   LayoutDashboard, Package, AlertTriangle, RotateCcw, Users,
-  Bell, ChevronRight,
+  Bell, ChevronRight, ScanLine,
 } from "lucide-react";
-import type { Customer } from "./types/customer";
 import type { Part } from "./types/part";
-import type { ReorderEntry } from "./types/reorder-entry";
 import type { View } from "./types/view";
-import { SEED_CUSTOMERS } from "./constant/seed_customers";
-import { SEED_PARTS } from "./constant/seed_parts";
-import { SEED_REORDERS } from "./constant/seed_reorders";
 import { getStatus } from "./utils/status";
 import { fmtCurrency } from "./utils/pricing";
 import { resolveAppMode, isDevPreviewHost } from "./utils/resolve-app-mode";
@@ -18,59 +13,85 @@ import { Modal } from "./shared/modal";
 import { Input } from "./shared/input";
 import Dashboard from "./pages/dashboard";
 import Inventory from "./pages/inventory";
+import VinLookup from "./pages/vin-lookup";
 import CustomerPage from "./pages/customer-page";
 import CustomerPortal from "./pages/customer-portal";
 import Alerts from "./components/alerts";
 import Reorders from "./components/reorders";
 import { SiteBanner } from "./components/mode-switcher-banner";
 import { LangCtx, CurrentLangCtx, createTranslator, useLang, usePartName, type Lang } from "./i18n/lang-context";
+import { useParts } from "./hooks/use-parts";
+import { useCustomers } from "./hooks/use-customers";
+import { useReorders } from "./hooks/use-reorders";
+import { resolveViewRequestKeys } from "./hooks/resolve-view-request-keys";
 
-let _id = 200;
-const genId = (prefix: string) => `${prefix}${++_id}`;
-const TODAY = "2026-07-14";
-
-function OwnerApp({
-  parts, setParts, customers, reorders, setReorders,
-}: {
-  parts: Part[];
-  setParts: React.Dispatch<React.SetStateAction<Part[]>>;
-  customers: Customer[];
-  reorders: ReorderEntry[];
-  setReorders: React.Dispatch<React.SetStateAction<ReorderEntry[]>>;
-}) {
+function OwnerApp() {
   const t = useLang();
   const partName = usePartName();
   const [view, setView] = useState<View>("dashboard");
   const [reorderTarget, setReorderTarget] = useState<Part | null>(null);
   const [reorderQty, setReorderQty] = useState("");
+  const [reorderSubmitting, setReorderSubmitting] = useState(false);
+
+  const requestKeys = useMemo(() => resolveViewRequestKeys(view), [view]);
+
+  const {
+    parts,
+    loading: partsLoading,
+    error: partsError,
+    create: createPart,
+    update: updatePart,
+  } = useParts({ requestKey: requestKeys.parts });
+  const {
+    customers,
+    loading: customersLoading,
+    error: customersError,
+  } = useCustomers({ requestKey: requestKeys.customers });
+  const {
+    reorders,
+    loading: reordersLoading,
+    error: reordersError,
+    create: createReorder,
+    updateStatus: updateReorderStatus,
+  } = useReorders({ requestKey: requestKeys.reorders });
 
   const alertCount = parts.filter(p => getStatus(p) !== "ok").length;
   const pendingCount = reorders.filter(r => r.status === "pending" || r.status === "ordered").length;
+
+  const activeLoading =
+    (requestKeys.parts != null && partsLoading) ||
+    (requestKeys.customers != null && customersLoading) ||
+    (requestKeys.reorders != null && reordersLoading);
+
+  const partsUnavailable = requestKeys.parts != null && !!partsError;
+  const customersUnavailable = requestKeys.customers != null && !!customersError;
+  const reordersUnavailable = requestKeys.reorders != null && !!reordersError;
 
   function quickReorder(p: Part) {
     setReorderTarget(p);
     setReorderQty(p.reorderQty.toString());
   }
 
-  function submitQuickReorder() {
-    if (!reorderTarget) return;
-    setReorders(rs => [{
-      id: genId("r"),
-      partId: reorderTarget.id,
-      partSku: reorderTarget.sku,
-      partName: reorderTarget.name,
-      quantity: Number(reorderQty) || reorderTarget.reorderQty,
-      supplier: reorderTarget.supplier,
-      unitCost: reorderTarget.unitPrice,
-      status: "pending",
-      type: "manual",
-      createdAt: TODAY,
-    }, ...rs]);
-    setReorderTarget(null);
+  async function submitQuickReorder() {
+    if (!reorderTarget || reorderSubmitting) return;
+    setReorderSubmitting(true);
+    try {
+      await createReorder({
+        partId: reorderTarget.id,
+        quantity: Number(reorderQty) || reorderTarget.reorderQty,
+        supplier: reorderTarget.supplier,
+        unitCost: reorderTarget.unitPrice,
+        type: "manual",
+      });
+      setReorderTarget(null);
+    } finally {
+      setReorderSubmitting(false);
+    }
   }
 
   const NAV = [
     { id: "dashboard" as View, label: t("navDashboard"), Icon: LayoutDashboard },
+    { id: "vinlookup" as View, label: t("navVinLookup"), Icon: ScanLine },
     { id: "inventory" as View, label: t("navInventory"), Icon: Package },
     { id: "alerts" as View, label: t("navAlerts"), Icon: AlertTriangle },
     { id: "reorders" as View, label: t("navReorders"), Icon: RotateCcw },
@@ -96,8 +117,9 @@ function OwnerApp({
             )}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={submitQuickReorder}
-                className="flex-1 py-2.5 bg-foreground text-primary-foreground text-[11px] font-mono font-semibold uppercase tracking-widest hover:bg-[#c94318] transition-colors"
+                onClick={() => void submitQuickReorder()}
+                disabled={reorderSubmitting}
+                className="flex-1 py-2.5 bg-foreground text-primary-foreground text-[11px] font-mono font-semibold uppercase tracking-widest hover:bg-[#c94318] transition-colors disabled:opacity-40"
               >
                 {t("reorderSubmit")}
               </button>
@@ -159,7 +181,8 @@ function OwnerApp({
         </div>
       </aside>
 
-      <main className="flex-1 min-h-0 overflow-y-auto bg-background">
+      {/* VIN Lookup scrolls its own parts panel, so main must not also scroll. */}
+      <main className={`flex-1 min-h-0 min-w-0 bg-background ${view === "vinlookup" ? "flex flex-col overflow-hidden" : "overflow-y-auto"}`}>
         <header className="sticky top-0 z-10 bg-background border-b border-border px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
             <span>Auto Shop</span>
@@ -179,12 +202,89 @@ function OwnerApp({
           </div>
         </header>
 
-        {view === "dashboard" && <Dashboard parts={parts} customers={customers} reorders={reorders} onNav={setView} />}
-        {view === "inventory" && <Inventory parts={parts} setParts={setParts} onQuickReorder={quickReorder} />}
-        {view === "alerts" && <Alerts parts={parts} onReorder={quickReorder} />}
-        {view === "reorders" && <Reorders parts={parts} reorders={reorders} setReorders={setReorders} />}
-        {view === "customers" && <CustomerPage customers={customers} />}
+        {activeLoading && (
+          <div className="flex items-center justify-center py-24 text-sm font-mono text-muted-foreground">
+            Loading…
+          </div>
+        )}
+
+        {!activeLoading && (
+          <>
+            {view === "dashboard" && (
+              <Dashboard
+                parts={parts}
+                customers={customers}
+                reorders={reorders}
+                unavailable={{
+                  parts: partsUnavailable,
+                  customers: customersUnavailable,
+                  reorders: reordersUnavailable,
+                }}
+                onNav={setView}
+              />
+            )}
+            {view === "inventory" && (
+              <Inventory
+                parts={parts}
+                unavailable={partsUnavailable}
+                createPart={createPart}
+                updatePart={updatePart}
+                onQuickReorder={quickReorder}
+              />
+            )}
+            {view === "vinlookup" && (
+              <VinLookup
+                parts={parts}
+                unavailable={partsUnavailable}
+                onQuickReorder={quickReorder}
+              />
+            )}
+            {view === "alerts" && (
+              <Alerts
+                parts={parts}
+                unavailable={partsUnavailable}
+                onReorder={quickReorder}
+              />
+            )}
+            {view === "reorders" && (
+              <Reorders
+                parts={parts}
+                reorders={reorders}
+                unavailable={{
+                  parts: partsUnavailable,
+                  reorders: reordersUnavailable,
+                }}
+                createReorder={createReorder}
+                updateReorderStatus={updateReorderStatus}
+              />
+            )}
+            {view === "customers" && (
+              <CustomerPage
+                customers={customers}
+                unavailable={customersUnavailable}
+              />
+            )}
+          </>
+        )}
       </main>
+    </div>
+  );
+}
+
+function CustomerModeApp() {
+  const { parts, loading, error } = useParts({ requestKey: "customer-portal" });
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-sm font-mono text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 min-h-0 w-full overflow-y-auto">
+      <CustomerPortal parts={parts} unavailable={!!error} />
     </div>
   );
 }
@@ -194,9 +294,6 @@ export default function App() {
   const resolvedMode = resolveAppMode();
   const [mode, setMode] = useState<AppMode>(resolvedMode);
   const [lang, setLang] = useState<Lang>("en");
-  const [parts, setParts] = useState<Part[]>(SEED_PARTS);
-  const [customers] = useState<Customer[]>(SEED_CUSTOMERS);
-  const [reorders, setReorders] = useState<ReorderEntry[]>(SEED_REORDERS);
 
   const activeMode = canSwitchModes ? mode : resolvedMode;
   const t = createTranslator(lang);
@@ -213,19 +310,7 @@ export default function App() {
             onSwitchMode={() => setMode(m => (m === "owner" ? "customer" : "owner"))}
           />
 
-          {activeMode === "customer" ? (
-            <div className="flex-1 min-h-0 w-full overflow-y-auto">
-              <CustomerPortal parts={parts} />
-            </div>
-          ) : (
-            <OwnerApp
-              parts={parts}
-              setParts={setParts}
-              customers={customers}
-              reorders={reorders}
-              setReorders={setReorders}
-            />
-          )}
+          {activeMode === "customer" ? <CustomerModeApp /> : <OwnerApp />}
         </div>
       </CurrentLangCtx.Provider>
     </LangCtx.Provider>

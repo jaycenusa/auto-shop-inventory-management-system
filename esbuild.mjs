@@ -12,6 +12,7 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveApiBaseUrl } from './scripts/resolve-api-base-url.mjs'
 import { resolvePublicPath } from './scripts/resolve-public-path.mjs'
 import { resolveSafeDistPath } from './scripts/safe-dist-path.mjs'
 
@@ -44,8 +45,10 @@ function loadDefine() {
     AWS_REDIRECT_SIGN_IN: JSON.stringify(redirectSignIn),
     AWS_REDIRECT_SIGN_OUT: JSON.stringify(redirectSignOut),
     DEFAULT_API_BASE_URL: JSON.stringify(
-      process.env.DEFAULT_API_BASE_URL ??
-        'https://autoshopapiservice.onrender.com',
+      resolveApiBaseUrl({
+        isDev: command === 'dev',
+        envApiBaseUrl: process.env.DEFAULT_API_BASE_URL,
+      }),
     ),
   }
 }
@@ -273,12 +276,17 @@ async function startDev() {
     devServer.on('error', reject)
   })
 
+  const apiBaseUrl = resolveApiBaseUrl({
+    isDev: true,
+    envApiBaseUrl: process.env.DEFAULT_API_BASE_URL,
+  })
   console.info(`Dev server: http://localhost:${devPort}`)
   console.info(`  Customer:  http://localhost:${devPort}`)
   console.info(`  Owner:     http://internal.localhost:${devPort}`)
   console.info(`  Dual mode: http://dev.localhost:${devPort}`)
+  console.info(`  API:       ${apiBaseUrl}`)
   console.info(
-    `(esbuild assets on port ${assetPort}, API proxy → ${apiTarget.port})`,
+    `(esbuild assets on port ${assetPort}, local /api proxy → ${apiTarget.port})`,
   )
 
   const shutdown = () => {

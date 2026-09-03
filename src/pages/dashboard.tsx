@@ -12,13 +12,19 @@ import { getStatus } from "../utils/status";
 import { StockBar } from "../shared/stock-bar";
 import { useLang, usePartName } from "../i18n/lang-context";
 import { fmtCurrency } from "../utils/pricing";
+import { displayOrDash, UNAVAILABLE } from "../utils/unavailable";
 
-export default function Dashboard({ parts, customers, reorders, onNav }: {
+export default function Dashboard({ parts, customers, reorders, unavailable, onNav }: {
   parts: Part[]; customers: Customer[]; reorders: ReorderEntry[];
+  unavailable?: { parts?: boolean; customers?: boolean; reorders?: boolean };
   onNav: (v: View) => void;
 }) {
   const t = useLang();
   const partName = usePartName();
+  const partsUnavailable = unavailable?.parts ?? false;
+  const customersUnavailable = unavailable?.customers ?? false;
+  const reordersUnavailable = unavailable?.reorders ?? false;
+
   const alertCount = parts.filter(p => getStatus(p) !== "ok").length;
   const outCount = parts.filter(p => getStatus(p) === "out").length;
   const pendingReorders = reorders.filter(r => r.status === "pending" || r.status === "ordered").length;
@@ -26,6 +32,7 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
   const activeCustomers = customers.filter(c => c.status === "active").length;
 
   const categoryData = useMemo(() => {
+    if (partsUnavailable) return [];
     const cats: Record<string, { stock: number; alerts: number }> = {};
     parts.forEach(p => {
       if (!cats[p.category]) cats[p.category] = { stock: 0, alerts: 0 };
@@ -33,9 +40,11 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
       if (getStatus(p) !== "ok") cats[p.category].alerts++;
     });
     return Object.entries(cats).map(([cat, d]) => ({ cat, stock: d.stock, alerts: d.alerts }));
-  }, [parts]);
+  }, [parts, partsUnavailable]);
 
-  const criticalParts = parts.filter(p => getStatus(p) === "out" || getStatus(p) === "critical").slice(0, 5);
+  const criticalParts = partsUnavailable
+    ? []
+    : parts.filter(p => getStatus(p) === "out" || getStatus(p) === "critical").slice(0, 5);
 
   return (
     <div className="p-8 space-y-8">
@@ -48,10 +57,32 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: t("dashTotalParts"), value: parts.length.toString(), sub: `${parts.filter(p=>p.autoReorder).length} ${t("dashAutoReorderActive")}`, color: "" },
-          { label: t("dashStockAlerts"), value: alertCount.toString(), sub: `${outCount} ${t("dashOutOfStock")}`, color: alertCount > 0 ? "border-l-4 border-l-[#c94318]" : "" },
-          { label: t("dashPendingReorders"), value: pendingReorders.toString(), sub: t("dashAwaitingFulfillment"), color: pendingReorders > 0 ? "border-l-4 border-l-blue-500" : "" },
-          { label: t("dashStockCostValue"), value: fmtCurrency(stockCostValue), sub: `${activeCustomers} ${t("dashActiveCustomers")}`, color: "" },
+          {
+            label: t("dashTotalParts"),
+            value: displayOrDash(parts.length, partsUnavailable),
+            sub: partsUnavailable ? UNAVAILABLE : `${parts.filter(p=>p.autoReorder).length} ${t("dashAutoReorderActive")}`,
+            color: "",
+          },
+          {
+            label: t("dashStockAlerts"),
+            value: displayOrDash(alertCount, partsUnavailable),
+            sub: partsUnavailable ? UNAVAILABLE : `${outCount} ${t("dashOutOfStock")}`,
+            color: !partsUnavailable && alertCount > 0 ? "border-l-4 border-l-[#c94318]" : "",
+          },
+          {
+            label: t("dashPendingReorders"),
+            value: displayOrDash(pendingReorders, reordersUnavailable),
+            sub: reordersUnavailable ? UNAVAILABLE : t("dashAwaitingFulfillment"),
+            color: !reordersUnavailable && pendingReorders > 0 ? "border-l-4 border-l-blue-500" : "",
+          },
+          {
+            label: t("dashStockCostValue"),
+            value: partsUnavailable ? UNAVAILABLE : fmtCurrency(stockCostValue),
+            sub: customersUnavailable
+              ? UNAVAILABLE
+              : `${activeCustomers} ${t("dashActiveCustomers")}`,
+            color: "",
+          },
         ].map(card => (
           <div key={card.label} className={`bg-card border border-border p-5 ${card.color}`}>
             <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{card.label}</p>
@@ -66,19 +97,23 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground mb-5">
             {t("dashStockByCategory")}
           </p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={categoryData} barSize={28}>
-              <CartesianGrid strokeDasharray="2 4" stroke="rgba(26,23,20,0.07)" vertical={false} />
-              <XAxis dataKey="cat" tick={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fill: "#7a7269" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fill: "#7a7269" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: "#f8f6f2", border: "1px solid rgba(26,23,20,0.12)", borderRadius: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
-                cursor={{ fill: "rgba(26,23,20,0.04)" }}
-              />
-              <Bar dataKey="stock" name={t("dashTotalStock")} fill="#1a1714" radius={0} />
-              <Bar dataKey="alerts" name={t("dashAlerts")} fill="#c94318" radius={0} />
-            </BarChart>
-          </ResponsiveContainer>
+          {partsUnavailable ? (
+            <div className="h-[220px] flex items-center justify-center text-sm font-mono text-muted-foreground">{UNAVAILABLE}</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={categoryData} barSize={28}>
+                <CartesianGrid strokeDasharray="2 4" stroke="rgba(26,23,20,0.07)" vertical={false} />
+                <XAxis dataKey="cat" tick={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fill: "#7a7269" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fill: "#7a7269" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "#f8f6f2", border: "1px solid rgba(26,23,20,0.12)", borderRadius: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
+                  cursor={{ fill: "rgba(26,23,20,0.04)" }}
+                />
+                <Bar dataKey="stock" name={t("dashTotalStock")} fill="#1a1714" radius={0} />
+                <Bar dataKey="alerts" name={t("dashAlerts")} fill="#c94318" radius={0} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
           <div className="flex gap-5 mt-3">
             <span className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
               <span className="w-3 h-2.5 bg-[#1a1714] inline-block" />{t("dashTotalStock")}
@@ -101,7 +136,11 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
               {t("dashViewAll")} <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          {criticalParts.length === 0 ? (
+          {partsUnavailable ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-muted-foreground font-mono">{UNAVAILABLE}</p>
+            </div>
+          ) : criticalParts.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-sm text-muted-foreground font-mono">{t("dashAllStockOK")}</p>
             </div>
@@ -118,7 +157,7 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
               ))}
             </div>
           )}
-          {criticalParts.length > 0 && (
+          {!partsUnavailable && criticalParts.length > 0 && (
             <button
               onClick={() => onNav("reorders")}
               className="mt-5 w-full py-2 bg-[#c94318] text-white text-[11px] font-mono font-semibold uppercase tracking-widest hover:bg-[#a33512] transition-colors flex items-center justify-center gap-2"
@@ -134,17 +173,21 @@ export default function Dashboard({ parts, customers, reorders, onNav }: {
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground mb-4">
           {t("dashAutoReorderEnabled")}
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {parts.filter(p => p.autoReorder).map(p => (
-            <div key={p.id} className="p-3 bg-background border border-border">
-              <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
-              <p className="text-sm font-medium text-foreground mt-0.5 truncate">{partName(p.sku, p.name)}</p>
-              <div className="mt-2">
-                <StockBar stock={p.stock} threshold={p.threshold} />
+        {partsUnavailable ? (
+          <p className="text-sm font-mono text-muted-foreground">{UNAVAILABLE}</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {parts.filter(p => p.autoReorder).map(p => (
+              <div key={p.id} className="p-3 bg-background border border-border">
+                <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
+                <p className="text-sm font-medium text-foreground mt-0.5 truncate">{partName(p.sku, p.name)}</p>
+                <div className="mt-2">
+                  <StockBar stock={p.stock} threshold={p.threshold} />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
