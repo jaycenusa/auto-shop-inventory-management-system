@@ -1,78 +1,72 @@
-import type { Customer, CustomerStatus } from '../types/customer'
-import { SEED_CUSTOMERS } from '../constant/seed_customers'
-
-// TODO: This is a template service using in-memory seed data.
-// In the future, this service will make API calls to the backend URL.
+import {
+  mapCustomerResponse,
+  mapCustomerStatsResponse,
+  type Customer,
+  type CustomerRequest,
+  type CustomerResponse,
+  type CustomerStats,
+  type CustomerStatsResponse,
+  type CustomerStatus,
+} from '../types/customer'
+import { apiFetch } from './http'
 
 export type CustomerFilterStatus = 'all' | CustomerStatus
 
-export type CustomerStats = {
-  totalCustomers: number
-  activeCustomers: number
-  totalOrders: number
-  totalRevenue: number
+export type CustomerListFilters = {
+  q?: string
+  status?: CustomerFilterStatus
 }
 
-let customers: Customer[] = [...SEED_CUSTOMERS]
-
-export const customerService = {
-  getAll(): Customer[] {
-    return [...customers]
-  },
-
-  getById(id: string): Customer | undefined {
-    return customers.find(c => c.id === id)
-  },
-
-  getActive(): Customer[] {
-    return customers.filter(c => c.status === 'active')
-  },
-
-  search(query: string, status: CustomerFilterStatus = 'all'): Customer[] {
-    const q = query.toLowerCase().trim()
-    return customers.filter(c => {
-      const matchQuery =
-        !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.company.toLowerCase().includes(q)
-      const matchStatus = status === 'all' || c.status === status
-      return matchQuery && matchStatus
+export class CustomerService {
+  async list(filters: CustomerListFilters = {}): Promise<Customer[]> {
+    const params = new URLSearchParams()
+    if (filters.q) params.set('q', filters.q)
+    if (filters.status && filters.status !== 'all') {
+      params.set('status', filters.status)
+    }
+    const query = params.toString()
+    const path = query ? `/api/customers?${query}` : '/api/customers'
+    const data = await apiFetch<CustomerResponse[]>(path, {
+      serviceName: 'CustomerService',
     })
-  },
+    return data.map(mapCustomerResponse)
+  }
 
-  getStats(): CustomerStats {
-    return {
-      totalCustomers: customers.length,
-      activeCustomers: customers.filter(c => c.status === 'active').length,
-      totalOrders: customers.reduce((sum, c) => sum + c.totalOrders, 0),
-      totalRevenue: customers.reduce((sum, c) => sum + c.totalSpent, 0),
-    }
-  },
+  async get(id: string): Promise<Customer> {
+    const data = await apiFetch<CustomerResponse>(
+      `/api/customers/${encodeURIComponent(id)}`,
+      { serviceName: 'CustomerService' },
+    )
+    return mapCustomerResponse(data)
+  }
 
-  create(data: Omit<Customer, 'id'>): Customer {
-    const customer: Customer = {
-      id: `c${Date.now()}`,
-      ...data,
-    }
-    customers = [...customers, customer]
-    return customer
-  },
+  async getStats(): Promise<CustomerStats> {
+    const data = await apiFetch<CustomerStatsResponse>('/api/customers/stats', {
+      serviceName: 'CustomerService',
+    })
+    return mapCustomerStatsResponse(data)
+  }
 
-  update(id: string, data: Partial<Omit<Customer, 'id'>>): Customer | undefined {
-    const index = customers.findIndex(c => c.id === id)
-    if (index === -1) return undefined
-    customers = customers.map(c => (c.id === id ? { ...c, ...data } : c))
-    return customers.find(c => c.id === id)
-  },
+  async create(data: CustomerRequest): Promise<Customer> {
+    const response = await apiFetch<CustomerResponse>('/api/customers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      serviceName: 'CustomerService',
+    })
+    return mapCustomerResponse(response)
+  }
 
-  remove(id: string): boolean {
-    const before = customers.length
-    customers = customers.filter(c => c.id !== id)
-    return customers.length < before
-  },
-
-  reset(): void {
-    customers = [...SEED_CUSTOMERS]
-  },
+  async update(id: string, data: CustomerRequest): Promise<Customer> {
+    const response = await apiFetch<CustomerResponse>(
+      `/api/customers/${encodeURIComponent(id)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        serviceName: 'CustomerService',
+      },
+    )
+    return mapCustomerResponse(response)
+  }
 }
+
+export const customerService = new CustomerService()

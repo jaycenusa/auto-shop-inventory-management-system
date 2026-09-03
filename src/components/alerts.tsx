@@ -2,12 +2,21 @@ import { AlertTriangle, Zap, Check, ShoppingCart } from "lucide-react";
 import type { Part } from "../types/part";
 import { getStatus } from "../utils/status";
 import { usePartName } from "../i18n/lang-context";
+import { UNAVAILABLE } from "../utils/unavailable";
 
-export default function Alerts({ parts, onReorder }: { parts: Part[]; onReorder: (p: Part) => void }) {
+export default function Alerts({
+  parts,
+  unavailable = false,
+  onReorder,
+}: {
+  parts: Part[];
+  unavailable?: boolean;
+  onReorder: (p: Part) => void;
+}) {
   const partName = usePartName();
-  const out = parts.filter(p => getStatus(p) === "out");
-  const critical = parts.filter(p => getStatus(p) === "critical");
-  const low = parts.filter(p => getStatus(p) === "low");
+  const out = unavailable ? [] : parts.filter(p => getStatus(p) === "out");
+  const critical = unavailable ? [] : parts.filter(p => getStatus(p) === "critical");
+  const low = unavailable ? [] : parts.filter(p => getStatus(p) === "low");
 
   const AlertGroup = ({ title, items, color, bgColor }: { title: string; items: Part[]; color: string; bgColor: string }) => {
     if (items.length === 0) return null;
@@ -52,14 +61,18 @@ export default function Alerts({ parts, onReorder }: { parts: Part[]; onReorder:
     <div className="p-8">
       <div className="mb-6">
         <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-          {out.length + critical.length + low.length} active alerts
+          {unavailable ? UNAVAILABLE : `${out.length + critical.length + low.length} active alerts`}
         </p>
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-4xl font-bold uppercase tracking-tight text-foreground">
           Stock Alerts
         </h1>
       </div>
 
-      {out.length === 0 && critical.length === 0 && low.length === 0 ? (
+      {unavailable ? (
+        <div className="bg-card border border-border p-16 text-center">
+          <p className="text-sm text-muted-foreground font-mono">{UNAVAILABLE}</p>
+        </div>
+      ) : out.length === 0 && critical.length === 0 && low.length === 0 ? (
         <div className="bg-card border border-border p-16 text-center">
           <Check className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-xl font-semibold uppercase tracking-wide text-foreground">All stock levels healthy</p>

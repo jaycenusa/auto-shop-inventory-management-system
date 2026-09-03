@@ -5,7 +5,7 @@ declare const AWS_USER_POOL_CLIENT_ID: string
 declare const AWS_COGNITO_DOMAIN: string
 declare const AWS_REDIRECT_SIGN_IN: string
 declare const AWS_REDIRECT_SIGN_OUT: string
-/** AutoShop API origin; set via DEFAULT_API_BASE_URL in `.env`. */
+/** AutoShop API origin; `npm run dev` injects http://localhost:8080, otherwise from `.env`. */
 declare const DEFAULT_API_BASE_URL: string
 
 interface Window {

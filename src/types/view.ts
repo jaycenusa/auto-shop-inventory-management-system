@@ -1,1 +1,7 @@
-export type View = 'dashboard' | 'inventory' | 'alerts' | 'reorders' | 'customers'
+export type View =
+  | 'dashboard'
+  | 'inventory'
+  | 'alerts'
+  | 'reorders'
+  | 'customers'
+  | 'vinlookup'

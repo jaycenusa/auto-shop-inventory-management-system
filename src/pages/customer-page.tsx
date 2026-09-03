@@ -1,19 +1,28 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import type { Customer } from "../types/customer";
+import { displayOrDash, UNAVAILABLE } from "../utils/unavailable";
 
 const fmtCurrency = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export default function CustomerPage({ customers }: { customers: Customer[] }) {
+export default function CustomerPage({
+  customers,
+  unavailable = false,
+}: {
+  customers: Customer[];
+  unavailable?: boolean;
+}) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
 
-  const filtered = customers.filter(c => {
-    const q = search.toLowerCase();
-    const matchQ = !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.company.toLowerCase().includes(q);
-    const matchS = filterStatus === "all" || c.status === filterStatus;
-    return matchQ && matchS;
-  });
+  const filtered = unavailable
+    ? []
+    : customers.filter(c => {
+        const q = search.toLowerCase();
+        const matchQ = !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.company.toLowerCase().includes(q);
+        const matchS = filterStatus === "all" || c.status === filterStatus;
+        return matchQ && matchS;
+      });
 
   const totalRevenue = customers.reduce((s, c) => s + c.totalSpent, 0);
   const totalOrders = customers.reduce((s, c) => s + c.totalOrders, 0);
@@ -22,19 +31,20 @@ export default function CustomerPage({ customers }: { customers: Customer[] }) {
     <div className="p-8">
       <div className="mb-6">
         <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-          {customers.filter(c => c.status === "active").length} active customers
+          {unavailable
+            ? UNAVAILABLE
+            : `${customers.filter(c => c.status === "active").length} active customers`}
         </p>
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-4xl font-bold uppercase tracking-tight text-foreground">
           customers
         </h1>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: "Total Customers", value: customers.length.toString() },
-          { label: "Total Orders", value: totalOrders.toString() },
-          { label: "Total Revenue", value: fmtCurrency(totalRevenue) },
+          { label: "Total Customers", value: displayOrDash(customers.length, unavailable) },
+          { label: "Total Orders", value: displayOrDash(totalOrders, unavailable) },
+          { label: "Total Revenue", value: unavailable ? UNAVAILABLE : fmtCurrency(totalRevenue) },
         ].map(s => (
           <div key={s.label} className="bg-card border border-border p-4">
             <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{s.label}</p>
@@ -43,7 +53,6 @@ export default function CustomerPage({ customers }: { customers: Customer[] }) {
         ))}
       </div>
 
-      {/* filters */}
       <div className="flex gap-3 mb-5 flex-wrap">
         <div className="flex items-center gap-2 bg-card border border-border px-3 py-2 flex-1 min-w-[200px]">
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -51,7 +60,8 @@ export default function CustomerPage({ customers }: { customers: Customer[] }) {
             placeholder="Search by name, email, company…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none flex-1 font-mono"
+            disabled={unavailable}
+            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none flex-1 font-mono disabled:opacity-40"
           />
         </div>
         <div className="flex border border-border overflow-hidden">
@@ -59,7 +69,8 @@ export default function CustomerPage({ customers }: { customers: Customer[] }) {
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
-              className={`px-4 py-2 text-[11px] font-mono uppercase tracking-widest transition-colors ${filterStatus === s ? "bg-foreground text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+              disabled={unavailable}
+              className={`px-4 py-2 text-[11px] font-mono uppercase tracking-widest transition-colors disabled:opacity-40 ${filterStatus === s ? "bg-foreground text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
             >
               {s}
             </button>
@@ -104,7 +115,11 @@ export default function CustomerPage({ customers }: { customers: Customer[] }) {
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground font-mono text-sm">No customers found</div>}
+        {(unavailable || filtered.length === 0) && (
+          <div className="py-12 text-center text-muted-foreground font-mono text-sm">
+            {unavailable ? UNAVAILABLE : "No customers found"}
+          </div>
+        )}
       </div>
     </div>
   );

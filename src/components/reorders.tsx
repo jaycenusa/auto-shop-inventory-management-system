@@ -1,35 +1,48 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 import { Plus, X, Zap, Check } from "lucide-react";
 import type { Part } from "../types/part";
-import type { ReorderEntry, ReorderStatus } from "../types/reorder-entry";
+import type { ReorderEntry, ReorderRequest, ReorderStatus } from "../types/reorder-entry";
 import { ReorderBadge, TypeBadge } from "../utils/badge";
 import { getStatus } from "../utils/status";
 import { Modal } from "../shared/modal";
 import { Input } from "../shared/input";
 import { usePartName } from "../i18n/lang-context";
+import { UNAVAILABLE } from "../utils/unavailable";
 
 const fmtCurrency = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-let _id = 200;
-const genId = (prefix: string) => `${prefix}${++_id}`;
-
-const TODAY = "2026-07-14";
-
-export default function Reorders({ parts, reorders, setReorders }: {
+export default function Reorders({
+  parts,
+  reorders,
+  unavailable,
+  createReorder,
+  updateReorderStatus,
+}: {
   parts: Part[];
   reorders: ReorderEntry[];
-  setReorders: Dispatch<SetStateAction<ReorderEntry[]>>;
+  unavailable?: { parts?: boolean; reorders?: boolean };
+  createReorder: (request: ReorderRequest) => Promise<ReorderEntry>;
+  updateReorderStatus: (id: string, status: ReorderStatus) => Promise<ReorderEntry>;
 }) {
   const partName = usePartName();
+  const partsUnavailable = unavailable?.parts ?? false;
+  const reordersUnavailable = unavailable?.reorders ?? false;
   const [tab, setTab] = useState<"active" | "history">("active");
   const [showModal, setShowModal] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [qty, setQty] = useState("");
   const [autoRunDone, setAutoRunDone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const active = reorders.filter(r => r.status === "pending" || r.status === "ordered");
-  const history = reorders.filter(r => r.status === "delivered" || r.status === "cancelled");
-  const belowThreshold = parts.filter(p => getStatus(p) !== "ok" && p.autoReorder);
+  const active = reordersUnavailable
+    ? []
+    : reorders.filter(r => r.status === "pending" || r.status === "ordered");
+  const history = reordersUnavailable
+    ? []
+    : reorders.filter(r => r.status === "delivered" || r.status === "cancelled");
+  const belowThreshold = partsUnavailable
+    ? []
+    : parts.filter(p => getStatus(p) !== "ok" && p.autoReorder);
 
   function openCreate(part?: Part) {
     setSelectedPart(part || null);
@@ -37,46 +50,49 @@ export default function Reorders({ parts, reorders, setReorders }: {
     setShowModal(true);
   }
 
-  function createOrder() {
-    if (!selectedPart) return;
-    const newEntry: ReorderEntry = {
-      id: genId("r"),
-      partId: selectedPart.id,
-      partSku: selectedPart.sku,
-      partName: selectedPart.name,
-      quantity: Number(qty) || selectedPart.reorderQty,
-      supplier: selectedPart.supplier,
-      unitCost: selectedPart.unitPrice,
-      status: "pending",
-      type: "manual",
-      createdAt: TODAY,
-    };
-    setReorders(rs => [newEntry, ...rs]);
-    setShowModal(false);
+  async function createOrder() {
+    if (!selectedPart || submitting) return;
+    setSubmitting(true);
+    try {
+      await createReorder({
+        partId: selectedPart.id,
+        quantity: Number(qty) || selectedPart.reorderQty,
+        supplier: selectedPart.supplier,
+        unitCost: selectedPart.unitPrice,
+        type: "manual",
+      });
+      setShowModal(false);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function runAutoReorder() {
-    const newOrders: ReorderEntry[] = belowThreshold
-      .filter(p => !reorders.some(r => r.partId === p.id && (r.status === "pending" || r.status === "ordered")))
-      .map(p => ({
-        id: genId("r"),
-        partId: p.id,
-        partSku: p.sku,
-        partName: p.name,
-        quantity: p.reorderQty,
-        supplier: p.supplier,
-        unitCost: p.unitPrice,
-        status: "pending" as ReorderStatus,
-        type: "auto" as const,
-        createdAt: TODAY,
-      }));
-    setReorders(rs => [...newOrders, ...rs]);
-    setAutoRunDone(true);
-    setTimeout(() => setAutoRunDone(false), 3000);
+  async function runAutoReorder() {
+    if (submitting) return;
+    const toCreate = belowThreshold.filter(
+      p => !reorders.some(r => r.partId === p.id && (r.status === "pending" || r.status === "ordered")),
+    );
+    if (toCreate.length === 0) return;
+    setSubmitting(true);
+    try {
+      for (const p of toCreate) {
+        await createReorder({
+          partId: p.id,
+          quantity: p.reorderQty,
+          supplier: p.supplier,
+          unitCost: p.unitPrice,
+          type: "auto",
+        });
+      }
+      setAutoRunDone(true);
+      setTimeout(() => setAutoRunDone(false), 3000);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function markStatus(id: string, status: ReorderStatus) {
-    setReorders(rs => rs.map(r => r.id === id ? { ...r, status, deliveredAt: status === "delivered" ? TODAY : r.deliveredAt } : r));
+  async function markStatus(id: string, status: ReorderStatus) {
+    await updateReorderStatus(id, status);
   }
 
   const ReorderTable = ({ items }: { items: ReorderEntry[] }) => (
@@ -103,19 +119,23 @@ export default function Reorders({ parts, reorders, setReorders }: {
               <td className="px-4 py-3">
                 {r.status === "pending" && (
                   <div className="flex gap-1">
-                    <button onClick={() => markStatus(r.id, "ordered")} className="px-2 py-1 text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">Order</button>
-                    <button onClick={() => markStatus(r.id, "cancelled")} className="p-1 text-muted-foreground hover:text-red-600 transition-colors"><X className="w-3 h-3" /></button>
+                    <button onClick={() => void markStatus(r.id, "ordered")} className="px-2 py-1 text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">Order</button>
+                    <button onClick={() => void markStatus(r.id, "cancelled")} className="p-1 text-muted-foreground hover:text-red-600 transition-colors"><X className="w-3 h-3" /></button>
                   </div>
                 )}
                 {r.status === "ordered" && (
-                  <button onClick={() => markStatus(r.id, "delivered")} className="px-2 py-1 text-[10px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">Mark Delivered</button>
+                  <button onClick={() => void markStatus(r.id, "delivered")} className="px-2 py-1 text-[10px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">Mark Delivered</button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      {items.length === 0 && <div className="py-12 text-center text-muted-foreground font-mono text-sm">No orders</div>}
+      {items.length === 0 && (
+        <div className="py-12 text-center text-muted-foreground font-mono text-sm">
+          {reordersUnavailable ? UNAVAILABLE : "No orders"}
+        </div>
+      )}
     </div>
   );
 
@@ -154,8 +174,8 @@ export default function Reorders({ parts, reorders, setReorders }: {
             )}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={createOrder}
-                disabled={!selectedPart || !qty}
+                onClick={() => void createOrder()}
+                disabled={!selectedPart || !qty || submitting}
                 className="flex-1 py-2.5 bg-foreground text-primary-foreground text-[11px] font-mono font-semibold uppercase tracking-widest hover:bg-[#c94318] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Submit Order
@@ -171,7 +191,9 @@ export default function Reorders({ parts, reorders, setReorders }: {
       <div className="flex items-end justify-between mb-6 flex-wrap gap-4">
         <div>
           <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-            {active.length} active · {history.length} completed
+            {reordersUnavailable
+              ? UNAVAILABLE
+              : `${active.length} active · ${history.length} completed`}
           </p>
           <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-4xl font-bold uppercase tracking-tight text-foreground">
             Reorder Center
@@ -179,8 +201,9 @@ export default function Reorders({ parts, reorders, setReorders }: {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={runAutoReorder}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-mono font-semibold uppercase tracking-widest transition-colors border ${autoRunDone ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-card border-border text-foreground hover:border-[#c94318] hover:text-[#c94318]"}`}
+            onClick={() => void runAutoReorder()}
+            disabled={submitting}
+            className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-mono font-semibold uppercase tracking-widest transition-colors border disabled:opacity-40 ${autoRunDone ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-card border-border text-foreground hover:border-[#c94318] hover:text-[#c94318]"}`}
           >
             {autoRunDone ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
             {autoRunDone ? "Auto-orders created" : `Run Auto-Reorder (${belowThreshold.length})`}
@@ -195,11 +218,13 @@ export default function Reorders({ parts, reorders, setReorders }: {
         </div>
       </div>
 
-      {/* Auto-Reorder Rules */}
       <div className="bg-card border border-border p-5 mb-6">
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground mb-3">
-          Auto-Reorder Triggers — {parts.filter(p => p.autoReorder).length} rules active
+          Auto-Reorder Triggers — {partsUnavailable ? UNAVAILABLE : `${parts.filter(p => p.autoReorder).length} rules active`}
         </p>
+        {partsUnavailable ? (
+          <p className="text-sm font-mono text-muted-foreground">{UNAVAILABLE}</p>
+        ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {parts.filter(p => p.autoReorder).map(p => {
             const st = getStatus(p);
@@ -215,9 +240,9 @@ export default function Reorders({ parts, reorders, setReorders }: {
             );
           })}
         </div>
+        )}
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-border mb-4">
         {(["active", "history"] as const).map(t => (
           <button
